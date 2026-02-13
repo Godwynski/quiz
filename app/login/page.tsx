@@ -19,6 +19,8 @@ export default function LoginPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+
   const [checkEmail, setCheckEmail] = useState(false);
   const router = useRouter();
 
@@ -50,6 +52,24 @@ export default function LoginPage() {
         toast.success("Logged in successfully");
         router.push("/");
       }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent! Check your email.");
+      setIsForgotPassword(false);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred";
       toast.error(message);
@@ -99,6 +119,60 @@ export default function LoginPage() {
     );
   }
 
+  if (isForgotPassword) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 relative">
+        <div className="absolute top-4 left-4 md:top-8 md:left-8">
+          <Link href="/">
+             <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Button>
+          </Link>
+        </div>
+        <Card className="w-full max-w-md shadow-sm">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold tracking-tight">Reset Password</CardTitle>
+            <CardDescription>
+              Enter your email address and we&apos;ll send you a link to reset your password.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleResetPassword}>
+            <CardContent className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-2">
+              <Button className="w-full" type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send Reset Link
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full"
+                type="button"
+                onClick={() => setIsForgotPassword(false)}
+                disabled={loading}
+              >
+                Back to Login
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 relative">
       <div className="absolute top-4 left-4 md:top-8 md:left-8">
@@ -135,7 +209,20 @@ export default function LoginPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {!isSignUp && (
+                  <Button
+                    variant="link"
+                    className="px-0 font-normal text-xs text-muted-foreground h-auto"
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    tabIndex={-1}
+                  >
+                    Forgot Password?
+                  </Button>
+                )}
+              </div>
               <div className="relative">
                 <Input
                   id="password"
