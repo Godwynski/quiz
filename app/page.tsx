@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Trash2, Plus, ArrowRight, BookOpen, Edit2, Loader2, LogOut } from "lucide-react";
@@ -178,7 +180,12 @@ export default function Home() {
               >
                 <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
                    <div className="space-y-1">
-                      <h1 className="text-3xl font-bold tracking-tight">Quizmaster</h1>
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-10 h-10">
+                           <Image src="/logo.svg" alt="QuizMaster Logo" fill className="object-contain" priority />
+                        </div>
+                        <h1 className="text-3xl font-bold tracking-tight">Quizmaster</h1>
+                      </div>
                       <p className="text-muted-foreground max-w-sm">
                          {user ? `Welcome back, ${user.email}` : "Explore and play quizzes below."}
                       </p>
@@ -215,12 +222,19 @@ export default function Home() {
                    </div>
                 ) : (
                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {Object.values(allQuizzes).map((quiz) => {
+                      {Object.values(allQuizzes)
+                      .filter(quiz => {
+                        // If it's a hardcoded manual quiz (no user_id), always show (or treat as public)
+                        // If it's a supabase quiz, show if public OR user is owner
+                        const isOwner = user && quiz.creator_email === user.email; // Fallback to email if user_id missing, but best if checking ID
+                        return quiz.is_public || isOwner || !quiz.creator_email; 
+                      })
+                      .map((quiz) => {
                          const isCustom = !quizzes[quiz.id]; // Hardcoded logic
                          return (
                            <Card 
                              key={quiz.id}
-                             className="group relative overflow-hidden border-border bg-card hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl h-full flex flex-col"
+                             className="group relative overflow-hidden border-border bg-card transition-all duration-300 cursor-pointer h-full flex flex-col"
                              onClick={() => handleStartQuiz(quiz.id)}
                            >
                               <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${quiz.color?.replace('from-', 'from-').replace('to-', 'to-') || 'from-zinc-500 to-zinc-700'} opacity-80`} />

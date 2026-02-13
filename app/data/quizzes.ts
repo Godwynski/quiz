@@ -14,6 +14,7 @@ export interface Quiz {
   questions: Question[];
   creator_email?: string;
   creator_name?: string;
+  is_public?: boolean;
 }
 
 // Default data removed per user request. 

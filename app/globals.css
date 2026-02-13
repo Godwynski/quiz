@@ -5,66 +5,67 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Minimalist Clean Theme */
-  --background: 0 0% 100%; /* White */
-  --foreground: 240 10% 3.9%; /* Zinc 950 */
+  /* Doodle Theme - Paper & Ink */
+  --background: 40 20% 97%; /* Off-white paper #f8f5f2 */
+  --foreground: 240 5% 10%; /* Ink Black #18181b */
 
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 240 5% 10%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
+  --popover-foreground: 240 5% 10%;
 
-  --primary: 240 5.9% 10%; /* Zinc 900 */
-  --primary-foreground: 0 0% 98%;
+  --primary: 260 60% 60%; /* Vibrant Purple Scribble */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 240 4.8% 95.9%; /* Zinc 100 */
-  --secondary-foreground: 240 5.9% 10%;
+  --secondary: 40 20% 92%; /* Slightly darker paper */
+  --secondary-foreground: 240 5% 10%;
 
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
+  --muted: 40 20% 92%;
+  --muted-foreground: 240 4% 46%;
 
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+  --accent: 260 60% 95%; /* Light purple wash */
+  --accent-foreground: 240 5% 10%;
 
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 240 5.9% 90%; /* Zinc 200 */
-  --input: 240 5.9% 90%;
-  --ring: 240 10% 3.9%;
+  --border: 240 5% 10%; /* Solid black for outlines */
+  --input: 240 5% 10%;
+  --ring: 260 60% 60%;
 
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 }
 
 .dark {
-  --background: 240 10% 3.9%; /* Zinc 950 */
-  --foreground: 0 0% 98%;
+  /* Dark Mode - Blackboard */
+  --background: 240 5% 10%; /* Dark board */
+  --foreground: 40 20% 97%; /* Chalk white */
 
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
+  --card: 240 4% 16%;
+  --card-foreground: 40 20% 97%;
 
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
+  --popover: 240 4% 16%;
+  --popover-foreground: 40 20% 97%;
 
-  --primary: 0 0% 98%;
-  --primary-foreground: 240 5.9% 10%;
+  --primary: 40 20% 97%; /* Chalk */
+  --primary-foreground: 240 5% 10%;
 
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 40 20% 97%;
 
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 5% 65%;
 
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
+  --accent: 240 4% 16%;
+  --accent-foreground: 40 20% 97%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 240 4.9% 83.9%;
+  --border: 40 20% 97%; /* Chalk outline */
+  --input: 40 20% 97%;
+  --ring: 40 20% 97%;
 }
 
 @theme inline {
@@ -90,20 +91,42 @@
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --font-sans: "Inter", "Geist Sans", sans-serif;
+  --font-sans: var(--font-patrick), "Patrick Hand", cursive;
 }
 
-/* Custom Scrollbar - Clean */
+/* Custom Scrollbar - Doodle */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
+  background: hsl(var(--foreground));
+  border: 2px solid hsl(var(--background));
   border-radius: 99px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: hsl(var(--primary));
 }
+
+/* Doodle Utilities */
+.doodle-border {
+  border: 2px solid currentColor;
+  /* More random/irregular shape */
+  border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  transition: none;
+}
+
+.doodle-action {
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.doodle-action:hover {
+  /* Wobbly hover effect */
+  border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+  transform: translateY(-2px) rotate(-1deg);
+  box-shadow: 4px 4px 0px currentColor;
+}
+
+

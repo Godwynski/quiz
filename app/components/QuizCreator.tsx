@@ -42,7 +42,7 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
 
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState<string>(initialData?.description || "");
-  const [questions, setQuestions] = useState<
+   const [questions, setQuestions] = useState<
     {
       question: string;
       options: string[];
@@ -57,6 +57,7 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
       explanation: "",
     },
   ]);
+  const [isPublic, setIsPublic] = useState(initialData?.is_public ?? false);
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -116,7 +117,7 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
 
     try {
       // Validate with Zod
-      const quizData = { title, description, questions };
+      const quizData = { title, description, questions, is_public: isPublic };
       QuizSchema.parse(quizData);
 
       if (!user) {
@@ -131,7 +132,8 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
          questions,
          icon: initialData?.icon || "✏️",
          color: initialData?.color || "from-zinc-500 to-zinc-700",
-         creator_email: initialData?.creator_email || user.email 
+         creator_email: initialData?.creator_email || user.email,
+         is_public: isPublic
       };
 
       const query = initialData?.id 
@@ -205,9 +207,8 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
     }
   };
 
-  const copyAiPrompt = () => {
-     const prompt = `Create a quiz about [TOPIC] with 5 questions.
-Return ONLY a JSON object with this format:
+  const [aiPrompt, setAiPrompt] = useState(`Create a comprehensive quiz based on the attached content / context.
+Return ONLY a raw JSON object (no markdown formatting) with this schema:
 {
   "title": "Quiz Title",
   "description": "Short description",
@@ -219,15 +220,16 @@ Return ONLY a JSON object with this format:
       "explanation": "Explanation of why this is correct."
     }
   ]
-}`;
-     navigator.clipboard.writeText(prompt);
+}`);
+
+  const copyAiPrompt = () => {
+     navigator.clipboard.writeText(aiPrompt);
      setCopied(true);
      toast.success("Prompt copied to clipboard");
      setTimeout(() => setCopied(false), 2000);
   };
 
-  // Mobile Wizard View
-  // Actually, let's implement the "One Question at a Time" view as requested.
+   const [showPrompt, setShowPrompt] = useState(false);
 
   return (
     <div className="w-full max-w-4xl mx-auto pb-20">
@@ -245,7 +247,7 @@ Return ONLY a JSON object with this format:
                   onClick={() => setMode('json')}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${mode === 'json' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                >
-                  Import
+                  Import / AI
                </button>
             </div>
          </div>
@@ -272,26 +274,46 @@ Return ONLY a JSON object with this format:
 
       {mode === 'json' ? (
          <div className="space-y-6">
-            <Card className="border-blue-100 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-900/50">
-               <CardContent className="pt-6 flex items-start gap-4">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg text-blue-600 dark:text-blue-400">
-                     <Bot className="w-6 h-6" />
-                  </div>
-                  <div className="flex-grow space-y-2">
-                     <h3 className="font-semibold text-blue-900 dark:text-blue-200">Generate with AI</h3>
-                     <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                        Copy the prompt below to generate a valid quiz with any LLM.
-                     </p>
+            <Card className="doodle-border border-blue-200/50 bg-blue-50/50 dark:bg-blue-950/20">
+               <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                     <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                        <Bot className="w-5 h-5" />
+                        Generate with AI
+                     </CardTitle>
                      <Button 
-                        onClick={copyAiPrompt} 
-                        variant="outline" 
-                        size="sm"
-                        className="mt-2 bg-background border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setShowPrompt(!showPrompt)}
+                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-100"
                      >
-                        {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                        {copied ? "Copied!" : "Copy System Prompt"}
+                        {showPrompt ? "Hide Prompt" : "Show Prompt"}
                      </Button>
                   </div>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                     Copy this prompt and paste it into ChatGPT, Claude, or any LLM along with your module/PDF content.
+                  </p>
+                  
+                  {showPrompt && (
+                     <div className="animate-in slide-in-from-top-2 fade-in duration-200">
+                        <Textarea 
+                           value={aiPrompt}
+                           onChange={(e) => setAiPrompt(e.target.value)}
+                           className="font-mono text-xs md:text-sm min-h-[200px] bg-background/50 mb-4"
+                        />
+                     </div>
+                  )}
+
+                  <Button 
+                     onClick={copyAiPrompt} 
+                     variant="outline" 
+                     className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                     {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                     {copied ? "Copied!" : "Copy Prompt to Clipboard"}
+                  </Button>
                </CardContent>
             </Card>
 
@@ -340,6 +362,18 @@ Return ONLY a JSON object with this format:
                          <Label>Description</Label>
                          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description" />
                       </div>
+                      <div className="flex items-center space-x-2 pt-2">
+                        <input 
+                           type="checkbox" 
+                           id="isPublic" 
+                           checked={isPublic}
+                           onChange={(e) => setIsPublic(e.target.checked)}
+                           className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary doodle-action"
+                        />
+                        <Label htmlFor="isPublic" className="font-medium cursor-pointer">
+                           Make Public? (Visible to everyone)
+                        </Label>
+                      </div>
                    </CardContent>
                 </Card>
 
@@ -358,7 +392,7 @@ Return ONLY a JSON object with this format:
                             className={`p-3 rounded-lg border text-sm cursor-pointer transition-all ${
                                currentStep === i 
                                ? 'bg-primary text-primary-foreground border-primary shadow-md' 
-                               : 'bg-card hover:bg-muted border-border'
+                               : 'bg-card border-border'
                             }`}
                          >
                             <div className="flex justify-between items-center">
@@ -382,7 +416,7 @@ Return ONLY a JSON object with this format:
              <div className="md:col-span-8">
                 <div
                     key={currentStep}
-                    className="animate-in fade-in slide-in-from-right-4 duration-200"
+                    className="animate-in fade-in duration-300"
                 >
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

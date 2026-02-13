@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS quizzes (
   description    TEXT,
   icon           TEXT DEFAULT '📝',
   color          TEXT DEFAULT 'from-zinc-500 to-zinc-700',
+  is_public      BOOLEAN DEFAULT false,
   
   -- JSON Data: Array of Question DTOs
   -- Format: [{ question: string, options: string[], correctAnswer: number, explanation: string }]

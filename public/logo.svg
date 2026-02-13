@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Hand-drawn style background circle -->
+  <path d="M10,50 Q10,10 50,10 Q90,10 90,50 Q90,90 50,90 Q10,90 10,50" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-5 50 50)"/>
+  <path d="M12,52 Q12,12 52,12 Q92,12 92,52 Q92,92 52,92 Q12,92 12,52" fill="none" stroke="#000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" transform="rotate(2 50 50)" opacity="0.5"/>
+  
+  <!-- Doodle Brain -->
+  <path d="M30,60 Q25,40 40,35 Q45,25 55,25 Q70,20 75,40 Q85,45 80,65 Q70,80 50,75 Q35,75 30,60" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Brain folds -->
+  <path d="M40,45 Q50,55 60,40" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M45,60 Q55,50 65,65" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Crooked Crown on top -->
+  <path d="M35,30 L30,10 L45,20 L55,5 L65,20 L80,10 L75,35" fill="none" stroke="#facc15" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M37,32 L32,12 L47,22 L57,7 L67,22 L82,12 L77,37" fill="none" stroke="#000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+
+  <!-- Sparkles -->
+  <line x1="85" y1="20" x2="95" y2="15" stroke="#000" stroke-width="2" stroke-linecap="round" />
+  <line x1="90" y1="10" x2="90" y2="25" stroke="#000" stroke-width="2" stroke-linecap="round" />
+  
+  <line x1="15" y1="80" x2="25" y2="75" stroke="#000" stroke-width="2" stroke-linecap="round" />
+  <line x1="20" y1="70" x2="20" y2="85" stroke="#000" stroke-width="2" stroke-linecap="round" />
+</svg>
