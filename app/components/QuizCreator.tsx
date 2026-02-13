@@ -1,26 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Save, Copy, FileJson, AlertCircle, Bot, Check, ArrowRight, ArrowLeft } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import { Button } from "./ui/button";
-import { Input } from "@/app/components/ui/input";
-import { Textarea } from "@/app/components/ui/textarea";
-import { Label } from "@/app/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter
-} from "./ui/card";
 import { Quiz } from "../data/quizzes";
-// import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/components/auth-provider";
 import { ConfirmDialog } from "./ui/confirm-dialog";
 import { supabase } from "@/app/lib/supabase";
 import { toast } from "sonner";
 import { QuizSchema } from "@/app/lib/schemas";
 import { z } from "zod";
+
+import { QuizMetadataForm } from "./quiz-creator/QuizMetadataForm";
+import { QuestionList } from "./quiz-creator/QuestionList";
+import { QuestionEditor } from "./quiz-creator/QuestionEditor";
+import { QuizImportView } from "./quiz-creator/QuizImportView";
 
 interface QuizCreatorProps {
   onSave: (quiz: Quiz) => void;
@@ -33,7 +27,6 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
   const [mode, setMode] = useState<'form' | 'json'>('form');
   const [jsonInput, setJsonInput] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Wizard Mode State (mobile friendly)
@@ -42,7 +35,7 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
 
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState<string>(initialData?.description || "");
-   const [questions, setQuestions] = useState<
+  const [questions, setQuestions] = useState<
     {
       question: string;
       options: string[];
@@ -58,6 +51,21 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
     },
   ]);
   const [isPublic, setIsPublic] = useState(initialData?.is_public ?? false);
+
+  const [aiPrompt, setAiPrompt] = useState(`Create a comprehensive quiz based on the attached content / context.
+Return ONLY a raw JSON object (no markdown formatting) with this schema:
+{
+  "title": "Quiz Title",
+  "description": "Short description",
+  "questions": [
+    {
+      "question": "Question text?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0, // Index 0-3
+      "explanation": "Explanation of why this is correct."
+    }
+  ]
+}`);
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -207,30 +215,6 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
     }
   };
 
-  const [aiPrompt, setAiPrompt] = useState(`Create a comprehensive quiz based on the attached content / context.
-Return ONLY a raw JSON object (no markdown formatting) with this schema:
-{
-  "title": "Quiz Title",
-  "description": "Short description",
-  "questions": [
-    {
-      "question": "Question text?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0, // Index 0-3
-      "explanation": "Explanation of why this is correct."
-    }
-  ]
-}`);
-
-  const copyAiPrompt = () => {
-     navigator.clipboard.writeText(aiPrompt);
-     setCopied(true);
-     toast.success("Prompt copied to clipboard");
-     setTimeout(() => setCopied(false), 2000);
-  };
-
-   const [showPrompt, setShowPrompt] = useState(false);
-
   return (
     <div className="w-full max-w-4xl mx-auto pb-20">
       <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-sm py-4 mb-6 flex flex-col md:flex-row justify-between items-center border-b border-border gap-4">
@@ -273,229 +257,51 @@ Return ONLY a raw JSON object (no markdown formatting) with this schema:
       </div>
 
       {mode === 'json' ? (
-         <div className="space-y-6">
-            <Card className="doodle-border border-blue-200/50 bg-blue-50/50 dark:bg-blue-950/20">
-               <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                     <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                        <Bot className="w-5 h-5" />
-                        Generate with AI
-                     </CardTitle>
-                     <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => setShowPrompt(!showPrompt)}
-                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-100"
-                     >
-                        {showPrompt ? "Hide Prompt" : "Show Prompt"}
-                     </Button>
-                  </div>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                     Copy this prompt and paste it into ChatGPT, Claude, or any LLM along with your module/PDF content.
-                  </p>
-                  
-                  {showPrompt && (
-                     <div className="animate-in slide-in-from-top-2 fade-in duration-200">
-                        <Textarea 
-                           value={aiPrompt}
-                           onChange={(e) => setAiPrompt(e.target.value)}
-                           className="font-mono text-xs md:text-sm min-h-[200px] bg-background/50 mb-4"
-                        />
-                     </div>
-                  )}
-
-                  <Button 
-                     onClick={copyAiPrompt} 
-                     variant="outline" 
-                     className="w-full border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                     {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                     {copied ? "Copied!" : "Copy Prompt to Clipboard"}
-                  </Button>
-               </CardContent>
-            </Card>
-
-            <Card>
-               <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                     <FileJson className="w-5 h-5 text-muted-foreground" />
-                     Paste JSON Data
-                  </CardTitle>
-               </CardHeader>
-               <CardContent className="space-y-4">
-                  <Textarea 
-                     value={jsonInput}
-                     onChange={(e) => setJsonInput(e.target.value)}
-                     placeholder='{ "title": "My Quiz", "questions": [...] }'
-                     className="font-mono text-xs md:text-sm min-h-[400px] resize-y"
-                  />
-                  
-                  {jsonError && (
-                     <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-md">
-                        <AlertCircle className="w-4 h-4" />
-                        {jsonError}
-                     </div>
-                  )}
-
-                  <Button onClick={handleJsonImport} className="w-full h-12">
-                     Load Data into Editor
-                  </Button>
-               </CardContent>
-            </Card>
-         </div>
+         <QuizImportView 
+            jsonInput={jsonInput}
+            setJsonInput={setJsonInput}
+            jsonError={jsonError}
+            onImport={handleJsonImport}
+            aiPrompt={aiPrompt}
+            setAiPrompt={setAiPrompt}
+         />
       ) : (
          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 relative">
              {/* Left Sidebar: Quiz Info & Question List */}
              <div className="md:col-span-4 space-y-6">
-                <Card>
-                   <CardHeader>
-                      <CardTitle className="text-base">Metadata</CardTitle>
-                   </CardHeader>
-                   <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                         <Label>Title</Label>
-                         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Quiz Title" />
-                      </div>
-                      <div className="space-y-2">
-                         <Label>Description</Label>
-                         <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description" />
-                      </div>
-                      <div className="flex items-center space-x-2 pt-2">
-                        <input 
-                           type="checkbox" 
-                           id="isPublic" 
-                           checked={isPublic}
-                           onChange={(e) => setIsPublic(e.target.checked)}
-                           className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary doodle-action"
-                        />
-                        <Label htmlFor="isPublic" className="font-medium cursor-pointer">
-                           Make Public? (Visible to everyone)
-                        </Label>
-                      </div>
-                   </CardContent>
-                </Card>
+                <QuizMetadataForm 
+                  title={title}
+                  setTitle={setTitle}
+                  description={description}
+                  setDescription={setDescription}
+                  isPublic={isPublic}
+                  setIsPublic={setIsPublic}
+                />
 
-                <div className="hidden md:block space-y-2">
-                   <div className="flex justify-between items-center px-1">
-                      <span className="text-sm font-medium text-muted-foreground">Questions</span>
-                      <Button variant="ghost" size="sm" onClick={handleAddQuestion}>
-                         <Plus className="w-4 h-4" />
-                      </Button>
-                   </div>
-                   <div className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                      {questions.map((q, i) => (
-                         <div 
-                            key={i}
-                            onClick={() => setCurrentStep(i)}
-                            className={`p-3 rounded-lg border text-sm cursor-pointer transition-all ${
-                               currentStep === i 
-                               ? 'bg-primary text-primary-foreground border-primary shadow-md' 
-                               : 'bg-card border-border'
-                            }`}
-                         >
-                            <div className="flex justify-between items-center">
-                               <span className="font-medium truncate max-w-[150px]">
-                                  {q.question || `Question ${i + 1}`}
-                               </span>
-                               {questions.length > 1 && (
-                                  <Trash2 
-                                     onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleRemoveQuestion(i); }} 
-                                     className="w-4 h-4 opacity-50 hover:opacity-100 hover:text-destructive" 
-                                  />
-                               )}
-                            </div>
-                         </div>
-                      ))}
-                   </div>
-                </div>
+                <QuestionList 
+                  questions={questions}
+                  currentStep={currentStep}
+                  setCurrentStep={setCurrentStep}
+                  onAddQuestion={handleAddQuestion}
+                  onRemoveQuestion={handleRemoveQuestion}
+                />
              </div>
 
              {/* Right Main Area: Active Question Editor */}
              <div className="md:col-span-8">
-                <div
-                    key={currentStep}
-                    className="animate-in fade-in duration-300"
-                >
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-lg">Question {currentStep + 1}</CardTitle>
-                            <div className="flex gap-2 md:hidden">
-                            <Button size="icon" variant="outline" disabled={currentStep === 0} onClick={() => setCurrentStep(prev => prev - 1)}>
-                                <ArrowLeft className="w-4 h-4" />
-                            </Button>
-                            <span className="flex items-center text-sm text-muted-foreground">
-                                {currentStep + 1} / {questions.length}
-                            </span>
-                            <Button size="icon" variant="outline" disabled={currentStep === questions.length - 1} onClick={() => setCurrentStep(prev => prev + 1)}>
-                                <ArrowRight className="w-4 h-4" />
-                            </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-6 pt-6">
-                            <div className="space-y-2">
-                            <Label>Question Text</Label>
-                            <Input 
-                                value={questions[currentStep].question}
-                                onChange={(e) => handleQuestionChange(currentStep, e.target.value)}
-                                placeholder="What is the capital of France?"
-                                className="text-lg font-medium" 
-                            />
-                            </div>
-
-                            <div className="space-y-4">
-                            <Label>Answers (Select the correct one)</Label>
-                            <div className="grid grid-cols-1 gap-3">
-                                {questions[currentStep].options.map((option, oIndex) => (
-                                    <div key={oIndex} className="flex items-center gap-3">
-                                        <div 
-                                        className={`flex-shrink-0 w-6 h-6 rounded-full border-2 cursor-pointer flex items-center justify-center transition-all ${
-                                            questions[currentStep].correctAnswer === oIndex
-                                            ? 'border-green-500 bg-green-500 text-white'
-                                            : 'border-muted-foreground/30 hover:border-primary'
-                                        }`}
-                                        onClick={() => handleCorrectAnswerChange(currentStep, oIndex)}
-                                        >
-                                            {questions[currentStep].correctAnswer === oIndex && <Check className="w-3 h-3" />}
-                                        </div>
-                                        <Input 
-                                            value={option}
-                                            onChange={(e) => handleOptionChange(currentStep, oIndex, e.target.value)}
-                                            placeholder={`Option ${oIndex + 1}`}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                            </div>
-
-                            <div className="space-y-2 pt-4 border-t border-border">
-                            <Label>Explanation (Optional)</Label>
-                            <Textarea 
-                                value={questions[currentStep].explanation}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleExplanationChange(currentStep, e.target.value)}
-                                placeholder="Explain why the answer is correct..."
-                                className="resize-none h-20"
-                            />
-                            </div>
-                        </CardContent>
-                        <CardFooter className="justify-between bg-muted/20 py-4">
-                            <Button 
-                            variant="outline" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleRemoveQuestion(currentStep)}
-                            disabled={questions.length <= 1}
-                            >
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete Question
-                            </Button>
-                            
-                            {/* Mobile Add Button */}
-                            <Button onClick={handleAddQuestion} variant="secondary" className="md:hidden">
-                                <Plus className="w-4 h-4 mr-2" /> Add New
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                </div>
+                <QuestionEditor 
+                  question={questions[currentStep]}
+                  index={currentStep}
+                  totalQuestions={questions.length}
+                  onQuestionChange={(val) => handleQuestionChange(currentStep, val)}
+                  onOptionChange={(oIndex, val) => handleOptionChange(currentStep, oIndex, val)}
+                  onCorrectAnswerChange={(oIndex) => handleCorrectAnswerChange(currentStep, oIndex)}
+                  onExplanationChange={(val) => handleExplanationChange(currentStep, val)}
+                  onRemove={() => handleRemoveQuestion(currentStep)}
+                  onAdd={handleAddQuestion}
+                  onNext={() => setCurrentStep(prev => prev + 1)}
+                  onPrev={() => setCurrentStep(prev => prev - 1)}
+                />
 
                 {/* Desktop Add Button (Bottom) */}
                 <div className="hidden md:flex justify-end mt-4">
