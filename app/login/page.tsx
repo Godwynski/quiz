@@ -8,7 +8,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Loader2, ArrowLeft, Eye, EyeOff, Mail } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
   const router = useRouter();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -38,8 +39,8 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        toast.success("Account created! You can now log in.");
-        setIsSignUp(false);
+        setCheckEmail(true);
+        toast.success("Account created! Please check your email.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -56,6 +57,47 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (checkEmail) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 relative">
+        <div className="absolute top-4 left-4 md:top-8 md:left-8">
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Button>
+          </Link>
+        </div>
+        <Card className="w-full max-w-md shadow-sm text-center">
+          <CardHeader>
+            <div className="mx-auto bg-primary/10 w-12 h-12 doodle-border flex items-center justify-center mb-4">
+              <Mail className="w-6 h-6 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold tracking-tight">Check your email</CardTitle>
+            <CardDescription className="text-base mt-2">
+              We&apos;ve sent a confirmation link to <span className="font-semibold text-foreground">{email}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Click the link in the email to activate your account and start playing.
+          </CardContent>
+          <CardFooter className="flex flex-col gap-2">
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => {
+                setCheckEmail(false);
+                setIsSignUp(false);
+              }}
+            >
+              Back to Login
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 relative">

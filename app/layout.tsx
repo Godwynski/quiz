@@ -38,7 +38,21 @@ export default function RootLayout({
         >
           <AuthProvider>
             {children}
-            <Toaster richColors position="top-center" closeButton />
+            <Toaster 
+              richColors 
+              position="top-center" 
+              closeButton 
+              toastOptions={{
+                className: "doodle-border",
+                style: {
+                  borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px", // inline style fallback if class doesn't hit
+                  border: "2px solid currentColor",
+                },
+                classNames: {
+                  toast: "doodle-border font-sans", // font-sans should map to Patrick Hand via layout
+                }
+              }}
+            />
           </AuthProvider>
         </ThemeProvider>
       </body>

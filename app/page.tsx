@@ -4,7 +4,17 @@ import Image from "next/image";
 
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Trash2, Plus, ArrowRight, BookOpen, Edit2, Loader2, LogOut } from "lucide-react";
+import { 
+  Plus, 
+  Trash2, 
+  Loader2, 
+  Globe,
+  Lock,
+  LogOut,
+  Edit2,
+  BookOpen,
+  ArrowRight
+} from "lucide-react";
 import { quizzes, Quiz } from "./data/quizzes";
 import { Button } from "./components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/ui/card";
@@ -241,8 +251,22 @@ export default function Home() {
                               
                               <CardHeader className="pb-4 flex-grow">
                                  <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-muted rounded-xl text-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                                       {quiz.icon || "📝"}
+                                    <div className="flex gap-2">
+                                       <div className="p-3 bg-muted rounded-xl text-2xl group-hover:scale-110 transition-transform duration-300 shadow-sm relative">
+                                          {quiz.icon || "📝"}
+                                          {user && (
+                                            <div 
+                                               className="absolute -top-2 -right-2 bg-background rounded-full p-1 shadow-sm border border-border" 
+                                               title={quiz.is_public ? "Public Quiz" : "Private Quiz"}
+                                            >
+                                               {quiz.is_public ? (
+                                                  <Globe className="w-3 h-3 text-zinc-400" />
+                                               ) : (
+                                                  <Lock className="w-3 h-3 text-zinc-400" />
+                                               )}
+                                            </div>
+                                          )}
+                                       </div>
                                     </div>
                                     {isCustom && (
                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
