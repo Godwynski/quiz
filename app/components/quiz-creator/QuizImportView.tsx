@@ -13,6 +13,92 @@ interface QuizImportViewProps {
   setAiPrompt: (value: string) => void;
 }
 
+const PROMPT_TEMPLATES = {
+  "Standard": `Generate a quiz based on the following content.
+Output ONLY raw JSON (no markdown formatting, no code blocks).
+Structure:
+{
+  "title": "Quiz Title",
+  "description": "Brief description",
+  "questions": [
+    {
+      "question": "Question text?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0, // Index of correct option (0-3)
+      "explanation": "Brief explanation of why this is correct"
+    }
+  ]
+}
+Requirements:
+- Create 5-10 multiple choice questions
+- 4 options per question
+- Varied difficulty levels
+- PURE JSON ONLY. Do not wrap in \`\`\`json tags.`,
+
+  "True/False": `Generate a True/False style quiz.
+Output ONLY raw JSON (no markdown formatting, no code blocks).
+Structure:
+{
+  "title": "True/False Assessment",
+  "description": "Test your knowledge with these statements.",
+  "questions": [
+    {
+      "question": "Statement to evaluate...",
+      "options": ["True", "False", "Not stated", "Ambiguous"],
+      "correctAnswer": 0,
+      "explanation": "Why it is True/False"
+    }
+  ]
+}
+Requirements:
+- 10 questions
+- Options must always include "True" and "False" as the first two
+- PURE JSON ONLY. Do not wrap in \`\`\`json tags.`,
+
+  "Hard Mode": `Create a CHALLENGING advanced-level quiz for Experts.
+Output ONLY raw JSON (no markdown formatting, no code blocks).
+Structure:
+{
+  "title": "Advanced Quiz",
+  "description": "Expert level assessment",
+  "questions": [
+    {
+      "question": "Complex scenario/question?",
+      "options": ["Plausible Distractor A", "Correct Answer", "Plausible Distractor B", "Plausible Distractor C"],
+      "correctAnswer": 1,
+      "explanation": "Detailed technical explanation"
+    }
+  ]
+}
+Requirements:
+- Questions should require critical thinking, not just recall
+- Distractors must be highly plausible
+- 4 options per question
+- PURE JSON ONLY. Do not wrap in \`\`\`json tags.`,
+
+  "Creative": `Create a fun, scenario-based quiz.
+Output ONLY raw JSON (no markdown formatting, no code blocks).
+Structure:
+{
+  "title": "Scenario Quiz 🎭",
+  "description": "Fun and engaging assessment",
+  "questions": [
+    {
+      "question": "Situation: [Scenario]. What do you do? 🤔",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "Why this is the best move"
+    }
+  ]
+}
+Requirements:
+- Use emojis in question text
+- Frame questions as "What would you do?" or real-world scenarios
+- Tone: Witty and engaging
+- 4 options per question
+- PURE JSON ONLY. Do not wrap in \`\`\`json tags.`
+};
+
 export function QuizImportView({
   jsonInput,
   setJsonInput,
@@ -51,8 +137,25 @@ export function QuizImportView({
           </CardHeader>
           <CardContent className="space-y-4">
              <p className="text-sm text-muted-foreground">
-                Copy this prompt and paste it into ChatGPT, Claude, or any LLM along with your module/PDF content.
+                Select a template, then copy the prompt to ChatGPT/Claude along with your notes.
              </p>
+
+             {/* Prompt Templates */}
+             {showPrompt && (
+                <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in zoom-in-95 duration-200">
+                   {Object.entries(PROMPT_TEMPLATES).map(([name, template]) => (
+                      <Button
+                         key={name}
+                         variant="outline"
+                         size="sm"
+                         onClick={() => setAiPrompt(template)}
+                         className="bg-white/50 hover:bg-white text-xs border-blue-200 text-blue-700"
+                      >
+                         {name}
+                      </Button>
+                   ))}
+                </div>
+             )}
              
              {showPrompt && (
                 <div className="animate-in slide-in-from-top-2 fade-in duration-200">

@@ -9,8 +9,13 @@ import confetti from "canvas-confetti";
 import ResultsScreen from "./ResultsScreen";
 import { ConfirmDialog } from "./ui/confirm-dialog";
 
+import { User } from "@supabase/supabase-js";
+import { supabase } from "@/app/lib/supabase";
+import { toast } from "sonner";
+
 interface QuizRunnerProps {
   quiz: Quiz;
+  user: User | null;
   onExit: () => void;
 }
 
@@ -42,7 +47,7 @@ const shuffleQuestion = (q: Question): Question => {
   };
 };
 
-export default function QuizRunner({ quiz, onExit }: QuizRunnerProps) {
+export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
@@ -98,7 +103,7 @@ export default function QuizRunner({ quiz, onExit }: QuizRunnerProps) {
     setShowExplanation(true);
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
     if (currentQuestionIndex < activeQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswerIndex(null);
@@ -106,6 +111,24 @@ export default function QuizRunner({ quiz, onExit }: QuizRunnerProps) {
       setShowExplanation(false);
     } else {
       setQuizComplete(true);
+      
+      // Save results if logged in
+      if (user) {
+         try {
+            await supabase.from('quiz_attempts').insert({
+               user_id: user.id,
+               quiz_id: quiz.id,
+               quiz_title: quiz.title,
+               score: score, 
+               total_questions: activeQuestions.length,
+               answers: userAnswers
+            });
+            toast.success("Result saved!");
+         } catch (err) {
+            console.error("Failed to save result:", err);
+            toast.error("Failed to save result history.");
+         }
+      }
     }
   };
 

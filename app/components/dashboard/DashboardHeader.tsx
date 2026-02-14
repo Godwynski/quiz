@@ -3,6 +3,7 @@ import { Button } from "@/app/components/ui/button";
 import { LogOut, Plus } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import { HistoryDialog } from "./HistoryDialog";
 
 interface DashboardHeaderProps {
   user: User | null;
@@ -24,13 +25,15 @@ export function DashboardHeader({ user, onSignOut, onCreateQuiz }: DashboardHead
           {user ? `Welcome back, ${user.email}` : "Explore and play quizzes below."}
         </p>
       </div>
-      <div className="flex gap-4">
+      <div className="flex items-center gap-2">
+        {user && <HistoryDialog user={user} />}
+        
         {user ? (
-          <Button onClick={onSignOut} variant="outline">
+          <Button onClick={onSignOut} variant="outline" className="mr-2">
             <LogOut className="mr-2 h-4 w-4" /> Sign Out
           </Button>
         ) : (
-          <Button onClick={() => window.location.assign('/login')} variant="outline">
+          <Button onClick={() => window.location.assign('/login')} variant="outline" className="mr-2">
             Sign In
           </Button>
         )}

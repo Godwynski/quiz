@@ -35,6 +35,7 @@ export default function QuizCreator({ onSave, onCancel, initialData }: QuizCreat
 
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState<string>(initialData?.description || "");
+  const [subject, setSubject] = useState<string>(initialData?.subject || "");
   const [questions, setQuestions] = useState<
     {
       question: string;
@@ -141,7 +142,8 @@ Return ONLY a raw JSON object (no markdown formatting) with this schema:
          icon: initialData?.icon || "✏️",
          color: initialData?.color || "from-zinc-500 to-zinc-700",
          creator_email: initialData?.creator_email || user.email,
-         is_public: isPublic
+         is_public: isPublic,
+         subject
       };
 
       const query = initialData?.id 
@@ -274,6 +276,8 @@ Return ONLY a raw JSON object (no markdown formatting) with this schema:
                   setTitle={setTitle}
                   description={description}
                   setDescription={setDescription}
+                  subject={subject}
+                  setSubject={setSubject}
                   isPublic={isPublic}
                   setIsPublic={setIsPublic}
                 />

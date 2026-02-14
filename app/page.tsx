@@ -72,7 +72,7 @@ export default function Home() {
                   transition={{ duration: 0.2 }}
                >
                   <ErrorBoundary>
-                    <QuizRunner quiz={currentQuiz} onExit={handleExitQuiz} />
+                    <QuizRunner quiz={currentQuiz} user={user} onExit={handleExitQuiz} />
                   </ErrorBoundary>
                </motion.div>
             )}

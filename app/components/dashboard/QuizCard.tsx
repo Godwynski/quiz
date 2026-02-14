@@ -40,7 +40,7 @@ export function QuizCard({ quiz, user, isCustom, onStart, onEdit, onDelete }: Qu
               )}
             </div>
           </div>
-          {isCustom && (
+          {isCustom && user?.email === quiz.creator_email && (
             <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
               <Button 
                 variant="ghost" 

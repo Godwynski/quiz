@@ -8,6 +8,8 @@ interface QuizMetadataFormProps {
   setTitle: (value: string) => void;
   description: string;
   setDescription: (value: string) => void;
+  subject: string;
+  setSubject: (value: string) => void;
   isPublic: boolean;
   setIsPublic: (value: boolean) => void;
 }
@@ -17,6 +19,8 @@ export function QuizMetadataForm({
   setTitle, 
   description, 
   setDescription, 
+  subject,
+  setSubject,
   isPublic, 
   setIsPublic 
 }: QuizMetadataFormProps) {
@@ -40,6 +44,14 @@ export function QuizMetadataForm({
             value={description} 
             onChange={(e) => setDescription(e.target.value)} 
             placeholder="Short description" 
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Subject (Folder)</Label>
+          <Input 
+            value={subject} 
+            onChange={(e) => setSubject(e.target.value)} 
+            placeholder="e.g. Mathematics, Science (Optional)" 
           />
         </div>
         <div className="flex items-center space-x-2 pt-2">
