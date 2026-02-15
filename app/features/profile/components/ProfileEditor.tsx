@@ -1,16 +1,15 @@
 "use client";
 
 import Image from "next/image";
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/app/components/ui/dialog";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
-import { supabase } from "@/app/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { User as UserIcon } from "lucide-react";
+import { profileService } from "../services/profileService";
 
 interface ProfileEditorProps {
   user: User | null;
@@ -30,19 +29,12 @@ export function ProfileEditor({ user, isOpen, onOpenChange, onSignOut }: Profile
     if (user && isOpen) {
       const fetchProfile = async () => {
         try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('username, avatar_url, total_xp, current_league')
-            .eq('id', user.id)
-            .maybeSingle();
-          
-          if (error) throw error;
-          if (data) {
-            const profile = data as { username?: string; avatar_url?: string; total_xp?: number; current_league?: string };
+          const profile = await profileService.getProfile(user.id);
+          if (profile) {
             setUsername(profile.username || "");
             setAvatarUrl(profile.avatar_url || "");
-            setTotalXp(profile.total_xp || 0);
-            setLeague(profile.current_league || "Bronze");
+            setTotalXp(profile.total_xp);
+            setLeague(profile.current_league);
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
@@ -56,19 +48,11 @@ export function ProfileEditor({ user, isOpen, onOpenChange, onSignOut }: Profile
     if (!user) return;
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          username,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString(),
-          total_xp: 0,
-          current_league: 'Bronze'
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as unknown as any, { onConflict: 'id' });
+      await profileService.updateProfile(user.id, {
+        username,
+        avatar_url: avatarUrl
+      });
 
-      if (error) throw error;
       toast.success("Profile updated!");
       onOpenChange(false);
     } catch (error) {
@@ -153,25 +137,9 @@ export function ProfileEditor({ user, isOpen, onOpenChange, onSignOut }: Profile
                  try {
                    setLoading(true);
                    const resizedBlob = await resizeImage(file);
-                   const fileExt = 'jpg';
-                   const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-                   const filePath = `${fileName}`;
-
-                   console.log('Uploading...', filePath);
-
-                   const { error: uploadError } = await supabase.storage
-                     .from('avatars')
-                     .upload(filePath, resizedBlob, {
-                       contentType: 'image/jpeg',
-                       upsert: true
-                     });
-
-                   if (uploadError) throw uploadError;
-
-                   const { data: { publicUrl } } = supabase.storage
-                     .from('avatars')
-                     .getPublicUrl(filePath);
-
+                   if (!user) return;
+                   const publicUrl = await profileService.uploadAvatar(user.id, resizedBlob);
+                   
                    setAvatarUrl(publicUrl);
                    toast.success("Avatar uploaded!");
                  } catch (error: unknown) {

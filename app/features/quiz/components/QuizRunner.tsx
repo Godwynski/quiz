@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { Check, X, ArrowRight } from "lucide-react";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Quiz, Question } from "../data/quizzes";
+import { Button } from "@/app/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
+import { Quiz, Question } from "@/app/data/quizzes";
 import confetti from "canvas-confetti";
 import ResultsScreen from "./ResultsScreen";
-import { ConfirmDialog } from "./ui/confirm-dialog";
+import { ConfirmDialog } from "@/app/components/ui/confirm-dialog";
 
 import { User } from "@supabase/supabase-js";
-import { supabase } from "@/app/lib/supabase";
-import { Json } from "@/app/types/supabase";
 import { toast } from "sonner";
+import { quizService } from "../services/quizService";
 
 interface QuizRunnerProps {
   quiz: Quiz;
@@ -120,19 +119,17 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
       // Save results if logged in
       if (user) {
          try {
-            const { data, error } = await supabase.rpc('submit_quiz_attempt', {
-               p_quiz_id: quiz.id,
-               p_quiz_title: quiz.title,
-               p_score: score, 
-               p_total_questions: activeQuestions.length,
-               p_answers: userAnswers as unknown as Json
-            } as any);
+            const result = await quizService.submitAttempt(
+               quiz.id,
+               quiz.title,
+               score,
+               activeQuestions.length,
+               userAnswers
+            );
             
-            if (error) throw error;
-
-            if (data) {
-               setXpGained(data.xp_gained);
-               setNewLeague(data.new_league);
+            if (result) {
+               setXpGained(result.xp_gained);
+               setNewLeague(result.new_league);
             }
 
             toast.success("Result saved!");

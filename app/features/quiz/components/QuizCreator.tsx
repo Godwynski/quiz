@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { Plus, Save } from "lucide-react";
-import { Button } from "./ui/button";
-import { Quiz } from "../data/quizzes";
+import { Button } from "@/app/components/ui/button";
+import { Quiz } from "@/app/data/quizzes";
 import { useAuth } from "@/app/components/auth-provider";
-import { ConfirmDialog } from "./ui/confirm-dialog";
-import { supabase } from "@/app/lib/supabase";
+import { ConfirmDialog } from "@/app/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { QuizSchema } from "@/app/lib/schemas";
+import { quizService } from "../services/quizService";
 import { z } from "zod";
 
 import { QuizMetadataForm } from "./quiz-creator/QuizMetadataForm";
@@ -134,7 +134,8 @@ Return ONLY a raw JSON object (no markdown formatting) with this schema:
          return;
       }
 
-      const payload = { 
+      const savedQuiz = await quizService.saveQuiz({
+         ...initialData,
          user_id: user.id,
          title,
          description,
@@ -144,18 +145,10 @@ Return ONLY a raw JSON object (no markdown formatting) with this schema:
          creator_email: initialData?.creator_email || user.email,
          is_public: isPublic,
          subject
-      };
-
-      const query = initialData?.id 
-        ? supabase.from('quizzes').update(payload).eq('id', initialData.id)
-        : supabase.from('quizzes').insert([payload]);
-
-      const { data, error } = await query.select().single();
-      
-      if (error) throw error;
+      }, !initialData?.id);
 
       toast.success("Quiz saved successfully!");
-      onSave({ ...data, id: data.id }); 
+      onSave({ ...savedQuiz, id: savedQuiz.id }); 
 
     } catch (e: unknown) {
        if (e instanceof z.ZodError) {

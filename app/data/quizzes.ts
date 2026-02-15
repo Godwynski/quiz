@@ -7,6 +7,8 @@ export interface Question {
 
 export interface Quiz {
   id: string;
+  user_id?: string;
+  created_at?: string;
   title: string;
   description: string;
   icon: string;

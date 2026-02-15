@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { Quiz } from "@/app/data/quizzes";
-import { supabase } from "@/app/lib/supabase";
+
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
+import { quizService } from "../features/quiz/services/quizService";
 
 export type QuizState = "home" | "quiz" | "create" | "edit";
 
@@ -23,46 +24,13 @@ export function useQuizManager(user: User | null) {
   const fetchCustomQuizzes = useCallback(async () => {
     setLoadingQuizzes(true);
     try {
-      const { data, error } = await supabase
-        .from('quizzes')
-        .select(`
-          *,
-          profiles:user_id (
-            username,
-            avatar_url
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        // Define the shape of the joined data
-        type QuizWithProfile = Quiz & {
-          profiles: {
-            username: string | null;
-            avatar_url: string | null;
-          } | null;
-        };
-
-        const fetchedQuizzes: Record<string, Quiz> = {};
-        (data as unknown as QuizWithProfile[]).forEach((q) => {
-           const profile = q.profiles;
-           const quiz: Quiz = {
-             ...q,
-             creator_username: profile?.username || undefined,
-             creator_avatar_url: profile?.avatar_url || undefined
-           };
-           // Remove the profiles property to match Quiz interface
-           if ('profiles' in quiz) {
-             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-             delete (quiz as any).profiles;
-           }
-           fetchedQuizzes[quiz.id] = quiz;
-        });
-        setCustomQuizzes(fetchedQuizzes);
-        setAllQuizzes(fetchedQuizzes);
-      }
+      const fetchedQuizzes = await quizService.getQuizzes();
+      const quizzesRecord: Record<string, Quiz> = {};
+      fetchedQuizzes.forEach(q => {
+        quizzesRecord[q.id] = q;
+      });
+      setCustomQuizzes(quizzesRecord);
+      setAllQuizzes(quizzesRecord);
     } catch (error: any) {
       console.error("Fetch error details:", error);
       const errorMessage = error.message || error.error_description || "Unknown error";
@@ -140,8 +108,7 @@ export function useQuizManager(user: User | null) {
     setAllQuizzes(updatedCustom);
 
     try {
-       const { error } = await supabase.from('quizzes').delete().eq('id', quizId);
-       if (error) throw error;
+       await quizService.deleteQuiz(quizId);
        toast.success("Quiz deleted");
     } catch {
        toast.error("Failed to delete quiz");

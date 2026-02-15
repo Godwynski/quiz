@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Trophy, Medal, ArrowLeft } from "lucide-react";
 import { MobileNav } from "@/app/components/navigation/MobileNav";
-import { ProfileEditor } from "@/app/components/profile/ProfileEditor";
+import { ProfileEditor } from "@/app/features/profile/components/ProfileEditor";
 import { useAuth } from "@/app/components/auth-provider";
 import { Button } from "@/app/components/ui/button";
 

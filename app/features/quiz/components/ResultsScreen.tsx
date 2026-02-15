@@ -1,7 +1,7 @@
 import confetti from 'canvas-confetti';
 import { useEffect } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { Button } from "@/app/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/app/components/ui/card";
 // Actually, I'll just use div with custom scrollbar class for now to avoid creating another file if I don't have to, but consistency...
 // I'll use div for now.
 

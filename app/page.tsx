@@ -3,15 +3,15 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useAuth } from "@/app/components/auth-provider";
-import QuizCreator from "@/app/components/QuizCreator";
-import QuizRunner from "@/app/components/QuizRunner";
+import QuizCreator from "@/app/features/quiz/components/QuizCreator";
+import QuizRunner from "@/app/features/quiz/components/QuizRunner";
 import { ConfirmDialog } from "@/app/components/ui/confirm-dialog";
 import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
-import { QuizGrid } from "@/app/components/dashboard/QuizGrid";
+import { QuizGrid } from "@/app/features/quiz/components/QuizGrid";
 import { useQuizManager } from "@/app/hooks/useQuizManager";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
 import { MobileNav } from "@/app/components/navigation/MobileNav";
-import { ProfileEditor } from "@/app/components/profile/ProfileEditor";
+import { ProfileEditor } from "@/app/features/profile/components/ProfileEditor";
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();

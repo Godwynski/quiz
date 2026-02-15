@@ -33,11 +33,12 @@ export function HistoryDialog({ user }: HistoryDialogProps) {
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
 
   const fetchHistory = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("quiz_attempts")
       .select("id, quiz_title, score, total_questions, completed_at")
-      .eq("user_id", user?.id)
+      .eq("user_id", user.id)
       .order("completed_at", { ascending: false })
       .limit(50); // Fetch last 50 attempts
 
