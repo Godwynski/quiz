@@ -39,8 +39,13 @@ export const profileService = {
   },
 
   async uploadAvatar(userId: string, file: Blob): Promise<string> {
+    // 1. Validation: Max 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      throw new Error("File size must be less than 2MB");
+    }
+
     const fileExt = 'jpg';
-    const fileName = `${userId}-${Math.random()}.${fileExt}`;
+    const fileName = `${userId}.${fileExt}`; // Consistent filename to overwrite old
     const filePath = `${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -56,6 +61,7 @@ export const profileService = {
       .from('avatars')
       .getPublicUrl(filePath);
 
-    return publicUrl;
+    // Add cache busting param to ensure UI updates immediately
+    return `${publicUrl}?t=${Date.now()}`;
   }
 };

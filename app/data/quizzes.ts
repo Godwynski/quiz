@@ -21,6 +21,9 @@ export interface Quiz {
 
   is_public?: boolean;
   subject?: string;
+  is_archived?: boolean;
+  view_count?: number;
+  attempt_count?: number;
 }
 
 // Default data removed per user request. 

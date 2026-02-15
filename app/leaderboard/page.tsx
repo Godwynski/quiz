@@ -32,7 +32,7 @@ export default function LeaderboardPage() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, avatar_url, total_xp, current_league')
         .not('username', 'is', null)
         .order('total_xp', { ascending: false })
         .limit(50);

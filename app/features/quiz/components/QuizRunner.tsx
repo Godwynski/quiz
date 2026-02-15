@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Check, X, ArrowRight } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
@@ -87,6 +87,15 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
     }
   }, [quizComplete, score, activeQuestions.length]);
 
+  const lastViewedQuizId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (lastViewedQuizId.current !== quiz.id) {
+      quizService.incrementViewCount(quiz.id);
+      lastViewedQuizId.current = quiz.id;
+    }
+  }, [quiz.id]);
+
   const handleAnswerSelect = (index: number) => {
     if (isAnswered) return;
     setSelectedAnswerIndex(index);
@@ -135,7 +144,8 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
                quiz.title,
                score,
                activeQuestions.length,
-               userAnswers
+               userAnswers,
+               quiz // Pass full quiz object as snapshot
             );
             
             if (result) {
@@ -221,7 +231,14 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
          
          <div className="flex items-center gap-4 text-sm font-medium text-zinc-500">
             <span>{currentQuestionIndex + 1} / {activeQuestions.length}</span>
-            <div className="h-2 w-24 bg-muted rounded-full overflow-hidden border border-zinc-200">
+            <div 
+               role="progressbar"
+               aria-valuenow={Math.round(progress)}
+               aria-valuemin={0}
+               aria-valuemax={100}
+               aria-label={`Progress: ${currentQuestionIndex + 1} of ${activeQuestions.length}`}
+               className="h-2 w-24 bg-muted rounded-full overflow-hidden border border-zinc-200"
+            >
                <div
                   className="h-full bg-primary transition-all duration-500 ease-out"
                   style={{ width: `${progress}%` }}
@@ -239,7 +256,7 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
                 </CardTitle>
              </CardHeader>
              <CardContent className="space-y-4 pt-4">
-                <div className="space-y-3">
+                <div className="space-y-3" role="group" aria-label="Answer options">
                    {currentQuestion.options.map((option, index) => {
                       const isSelected = selectedAnswerIndex === index;
                       const isCorrect = index === currentQuestion.correctAnswer;
@@ -261,7 +278,9 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
                             key={index}
                             onClick={() => handleAnswerSelect(index)}
                             disabled={isAnswered}
-                            className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 flex items-center justify-between group doodle-action ${buttonClass}`}
+                            aria-disabled={isAnswered}
+                            aria-label={option}
+                            className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 flex items-center justify-between group doodle-action ${buttonClass} focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black outline-none`}
                          >
                             <span className="font-medium text-lg leading-snug">{option}</span>
                             {showCorrectness && <Check className="w-6 h-6 text-green-700 stroke-[3]" />}
@@ -272,7 +291,11 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
                 </div>
 
                 {showExplanation && (
-                    <div className="mt-6 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div 
+                      className="mt-6 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300"
+                      role="status"
+                      aria-live="polite"
+                    >
                       <div className="p-4 bg-muted/50 rounded-lg border-2 border-dashed border-muted-foreground/30 text-sm md:text-base text-muted-foreground leading-relaxed">
                          <span className="font-bold block mb-1 text-foreground flex items-center gap-2">
                             💡 Explanation

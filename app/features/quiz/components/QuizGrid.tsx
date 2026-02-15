@@ -15,27 +15,40 @@ interface QuizGridProps {
   onStart: (id: string) => void;
   onEdit: (e: React.MouseEvent, quiz: Quiz) => void;
   onDelete: (e: React.MouseEvent, id: string) => void;
+  onDuplicate?: (e: React.MouseEvent, quiz: Quiz) => void;
+  onArchive?: (e: React.MouseEvent, id: string) => void;
 }
 
-export function QuizGrid({ quizzes, loading, user, userAttempts, onStart, onEdit, onDelete }: QuizGridProps) {
-  const [filter, setFilter] = useState<'all' | 'my'>('all');
+export function QuizGrid({ quizzes, loading, user, userAttempts, onStart, onEdit, onDelete, onDuplicate, onArchive }: QuizGridProps) {
+  const [filter, setFilter] = useState<'all' | 'my' | 'archived'>('all');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const filteredQuizzes = Object.values(quizzes).filter(quiz => {
     const isOwner = user && (quiz.user_id === user.id || quiz.creator_email === user.email);
 
-    // 1. Visibility Check: Hide private quizzes from non-owners
+    // 0. Base Filter: Hide archived quizzes from 'all' and 'my' views
+    if (filter !== 'archived' && quiz.is_archived) {
+      return false;
+    }
+
+    // 1. Visibility Check: Hide private quizzes from non-owners (unless it's their own)
     if (!quiz.is_public && !isOwner) {
       return false;
     }
 
-    // 2. Filter by Tab (My Quizzes)
+    // 2. Filter by Tab
     if (filter === 'my' && !isOwner) {
       return false;
     }
+    
+    // 3. Filter by Archived Tab
+    if (filter === 'archived') {
+       // Only show my archived quizzes
+       if (!isOwner || !quiz.is_archived) return false;
+    }
 
-    // 3. Filter by Search
+    // 4. Filter by Search
     if (search && !quiz.title.toLowerCase().includes(search.toLowerCase())) {
         return false;
     }
@@ -68,11 +81,11 @@ export function QuizGrid({ quizzes, loading, user, userAttempts, onStart, onEdit
 
          <div className="flex gap-2">
             {/* Filter Tabs - Segmented Control Style */}
-            <div className="flex p-1 bg-muted/80 rounded-xl border border-black/5 flex-1 sm:flex-none">
+            <div className="flex p-1 bg-muted/80 rounded-xl border border-black/5 flex-1 sm:flex-none overflow-x-auto">
                <Button 
                  variant="ghost"
                  onClick={() => setFilter('all')}
-                 className={`flex-1 sm:flex-none h-9 rounded-lg text-sm font-semibold transition-all ${filter === 'all' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                 className={`flex-1 sm:flex-none h-9 px-4 rounded-lg text-sm font-semibold transition-all ${filter === 'all' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                >
                  All
                </Button>
@@ -80,9 +93,17 @@ export function QuizGrid({ quizzes, loading, user, userAttempts, onStart, onEdit
                  variant="ghost"
                  onClick={() => setFilter('my')}
                  disabled={!user}
-                 className={`flex-1 sm:flex-none h-9 rounded-lg text-sm font-semibold transition-all ${filter === 'my' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                 className={`flex-1 sm:flex-none h-9 px-4 rounded-lg text-sm font-semibold transition-all ${filter === 'my' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                >
                  My Quizzes
+               </Button>
+               <Button 
+                 variant="ghost"
+                 onClick={() => setFilter('archived')}
+                 disabled={!user}
+                 className={`flex-1 sm:flex-none h-9 px-4 rounded-lg text-sm font-semibold transition-all ${filter === 'archived' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+               >
+                 Archived
                </Button>
             </div>
 
@@ -134,6 +155,8 @@ export function QuizGrid({ quizzes, loading, user, userAttempts, onStart, onEdit
                   onStart={onStart} 
                   onEdit={onEdit} 
                   onDelete={onDelete} 
+                  onDuplicate={onDuplicate}
+                  onArchive={onArchive}
                 />
              ) : (
                 <QuizListCard 
@@ -145,6 +168,8 @@ export function QuizGrid({ quizzes, loading, user, userAttempts, onStart, onEdit
                   onStart={onStart} 
                   onEdit={onEdit} 
                   onDelete={onDelete} 
+                  onDuplicate={onDuplicate}
+                  onArchive={onArchive}
                 />
              );
           })}

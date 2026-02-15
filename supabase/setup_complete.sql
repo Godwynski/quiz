@@ -81,6 +81,10 @@ where id not in (select id from public.profiles);
 -- ==========================================
 
 alter table public.quizzes add column if not exists subject text;
+alter table public.quizzes add column if not exists is_archived boolean default false;
+alter table public.quizzes add column if not exists view_count integer default 0;
+alter table public.quizzes add column if not exists attempt_count integer default 0;
+
 create index if not exists idx_quizzes_subject on public.quizzes(subject);
 
 -- Ensure Foreign Key relationship exists
@@ -96,6 +100,17 @@ BEGIN
     END IF;
 END $$;
 
+
+
+-- 2.1 SECURITY & RLS
+-- Ensure RLS is enabled for quizzes
+alter table public.quizzes enable row level security;
+
+-- Policy: Users can only delete their own quizzes
+drop policy if exists "Users can only delete their own quizzes" on public.quizzes;
+create policy "Users can only delete their own quizzes"
+  on public.quizzes for delete
+  using (auth.uid() = user_id);
 
 -- ==========================================
 -- 3. QUIZ ATTEMPTS & GAMIFICATION
@@ -116,6 +131,7 @@ create table public.quiz_attempts (
   score integer default 0,
   total_questions integer default 0,
   answers jsonb default '[]'::jsonb,
+  quiz_snapshot jsonb,
   completed_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -131,9 +147,23 @@ create policy "Users can view their own attempts"
   on public.quiz_attempts for select
   using (auth.uid() = user_id);
 
+create policy "Users can delete own attempts via RPC only"
+  on public.quiz_attempts for delete
+  using (auth.uid() = user_id);
+
 -- Indexes
-create index idx_quiz_attempts_user_id on public.quiz_attempts(user_id);
-create index idx_quiz_attempts_quiz_id on public.quiz_attempts(quiz_id);
+create index if not exists idx_quiz_attempts_user_id on public.quiz_attempts(user_id);
+create index if not exists idx_quiz_attempts_quiz_id on public.quiz_attempts(quiz_id);
+
+-- Performance Optimization Indexes
+-- Leaderboard: optimize sorting by XP for users with usernames
+CREATE INDEX IF NOT EXISTS idx_profiles_xp_desc ON public.profiles(total_xp DESC) WHERE username IS NOT NULL;
+
+-- History: optimize fetching recent attempts for a user
+CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user_completed ON public.quiz_attempts(user_id, completed_at DESC);
+
+-- Quizzes: optimize fetching public quizzes
+CREATE INDEX IF NOT EXISTS idx_quizzes_public ON public.quizzes(is_public) WHERE is_public = true;
 
 -- RPC Function: Submit Quiz Attempt
 -- Handles XP calculation, league updates, and prevents farming
@@ -154,7 +184,19 @@ DECLARE
   v_new_league text;
   v_attempt_id uuid;
   v_is_new_best boolean;
+  v_last_attempt_time timestamptz;
 BEGIN
+  -- Rate Limiting: Check if user submitted this quiz recently (e.g., last 5 seconds)
+  SELECT completed_at INTO v_last_attempt_time
+  FROM public.quiz_attempts
+  WHERE user_id = auth.uid() AND quiz_id = p_quiz_id
+  ORDER BY completed_at DESC
+  LIMIT 1;
+
+  IF v_last_attempt_time IS NOT NULL AND v_last_attempt_time > (now() - interval '5 seconds') THEN
+     RAISE EXCEPTION 'Please wait a moment before submitting again.';
+  END IF;
+
   -- Query the best XP previously earned from this quiz
   SELECT MAX(
     CASE
@@ -245,25 +287,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ==========================================
--- 4. UTILITY FUNCTIONS
--- ==========================================
 
--- RPC: Clear User History
--- Deletes all quiz attempts and resets XP/League for the authenticated user
-CREATE OR REPLACE FUNCTION public.clear_user_history()
+
+-- RPC: Increment View Count
+CREATE OR REPLACE FUNCTION public.increment_view_count(quiz_id text)
 RETURNS void AS $$
 BEGIN
-  -- 1. Delete all attempts for the user
-  DELETE FROM public.quiz_attempts
-  WHERE user_id = auth.uid();
+  UPDATE public.quizzes
+  SET view_count = view_count + 1
+  WHERE id = quiz_id::uuid; -- Cast text to uuid if necessary
+EXCEPTION WHEN OTHERS THEN
+  -- Handle invalid UUIDs gracefully
+  NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-  -- 2. Reset Profile Stats
-  UPDATE public.profiles
-  SET 
-    total_xp = 0,
-    current_league = 'Bronze',
-    updated_at = now()
-  WHERE id = auth.uid();
+-- RPC: Increment Attempt Count
+CREATE OR REPLACE FUNCTION public.increment_attempt_count(quiz_id text)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.quizzes
+  SET attempt_count = attempt_count + 1
+  WHERE id = quiz_id::uuid;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

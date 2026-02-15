@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/app/lib/supabase";
+import { PasswordSchema } from "@/app/lib/schemas";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -27,6 +28,15 @@ export default function UpdatePasswordPage() {
       setLoading(false);
       return;
     }
+
+    // Validate password complexity
+    const result = PasswordSchema.safeParse(password);
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      setLoading(false);
+      return;
+    }
+
 
     try {
       const { error } = await supabase.auth.updateUser({

@@ -45,9 +45,12 @@ export interface Database {
           icon: string | null
           color: string | null
           is_public: boolean
-          questions: Json
+          questions: Json[]
           creator_email: string | null
           subject: string | null
+          is_archived: boolean
+          view_count: number
+          attempt_count: number
         }
         Insert: {
           id?: string
@@ -58,9 +61,12 @@ export interface Database {
           icon?: string | null
           color?: string | null
           is_public?: boolean
-          questions: Json
+          questions: Json[]
           creator_email?: string | null
           subject?: string | null
+          is_archived?: boolean
+          view_count?: number
+          attempt_count?: number
         }
         Update: {
           id?: string
@@ -71,9 +77,12 @@ export interface Database {
           icon?: string | null
           color?: string | null
           is_public?: boolean
-          questions?: Json
+          questions?: Json[]
           creator_email?: string | null
           subject?: string | null
+          is_archived?: boolean
+          view_count?: number
+          attempt_count?: number
         }
       }
       quiz_attempts: {
@@ -86,6 +95,7 @@ export interface Database {
           total_questions: number
           completed_at: string
           answers: Json
+          quiz_snapshot: Json | null
         }
         Insert: {
           id?: string
@@ -96,6 +106,7 @@ export interface Database {
           total_questions: number
           completed_at?: string
           answers: Json
+          quiz_snapshot?: Json | null
         }
         Update: {
           id?: string
@@ -106,6 +117,7 @@ export interface Database {
           total_questions?: number
           completed_at?: string
           answers?: Json
+          quiz_snapshot?: Json | null
         }
       }
     }
@@ -121,9 +133,28 @@ export interface Database {
         Returns: {
           attempt_id: string
           xp_gained: number
+          xp_from_attempt: number
+          previous_best_xp: number
           new_total_xp: number
           new_league: string
+          is_new_best: boolean
         }
+      }
+      clear_user_history: {
+        Args: Record<PropertyKey, never>
+        Returns: void
+      }
+      increment_view_count: {
+        Args: {
+          quiz_id: string
+        }
+        Returns: void
+      }
+      increment_attempt_count: {
+        Args: {
+          quiz_id: string
+        }
+        Returns: void
       }
     }
   }

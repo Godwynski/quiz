@@ -1,9 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Quiz } from "@/app/data/quizzes";
 
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import { quizService } from "../features/quiz/services/quizService";
+import { useQuizzes } from "./useQuizzes";
+import { useUserAttempts } from "./useUserAttempts";
 
 export type QuizState = "home" | "quiz" | "create" | "edit";
 
@@ -11,68 +13,25 @@ export function useQuizManager(user: User | null) {
   const [quizState, setQuizState] = useState<QuizState>("home");
   const [currentSubject, setCurrentSubject] = useState<string | null>(null);
   
-  // Quiz Data
-  const [customQuizzes, setCustomQuizzes] = useState<Record<string, Quiz>>({});
-  const [allQuizzes, setAllQuizzes] = useState<Record<string, Quiz>>({});
-  const [loadingQuizzes, setLoadingQuizzes] = useState(false);
+  // SWR Hooks
+  const { quizzes: fetchedQuizzes, loading: loadingQuizzes, mutate: mutateQuizzes } = useQuizzes();
+  const { userAttempts, mutate: mutateAttempts } = useUserAttempts(user?.id);
+
+  // Derived State (Memoized to prevent loops)
+  const allQuizzes = useMemo(() => {
+    const quizzesRecord: Record<string, Quiz> = {};
+    fetchedQuizzes.forEach(q => {
+      quizzesRecord[q.id] = q;
+    });
+    return quizzesRecord;
+  }, [fetchedQuizzes]);
 
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
   
   // Edit Mode
   const [quizToEdit, setQuizToEdit] = useState<Quiz | undefined>(undefined);
 
-  const [userAttempts, setUserAttempts] = useState<Record<string, { best_score: number; total: number; is_perfect: boolean }>>({});
-
-  const fetchCustomQuizzes = useCallback(async () => {
-    setLoadingQuizzes(true);
-    try {
-      const fetchedQuizzes = await quizService.getQuizzes();
-      const quizzesRecord: Record<string, Quiz> = {};
-      fetchedQuizzes.forEach(q => {
-        quizzesRecord[q.id] = q;
-      });
-      setCustomQuizzes(quizzesRecord);
-      setAllQuizzes(quizzesRecord);
-
-      // Fetch attempts if user is logged in
-      if (user) {
-         try {
-            const attempts = await quizService.getUserAttempts(user.id);
-            const attemptsMap: Record<string, { best_score: number; total: number; is_perfect: boolean }> = {};
-            
-            attempts.forEach(attempt => {
-               const existing = attemptsMap[attempt.quiz_id];
-               const isPerfect = attempt.score === attempt.total_questions;
-               
-               if (!existing || attempt.score > existing.best_score) {
-                  attemptsMap[attempt.quiz_id] = {
-                     best_score: attempt.score,
-                     total: attempt.total_questions,
-                     is_perfect: isPerfect || (existing?.is_perfect ?? false)
-                  };
-               } else if (isPerfect) {
-                  // even if score isn't higher (e.g. ties), mark as perfect if this attempt is perfect
-                  existing.is_perfect = true;
-               }
-            });
-            setUserAttempts(attemptsMap);
-         } catch (err) {
-            console.error("Failed to load attempts", err);
-         }
-      }
-
-    } catch (error: unknown) {
-      console.error("Fetch error details:", error);
-      const errorMessage = (error as Error).message || (error as { error_description?: string }).error_description || "Unknown error";
-      toast.error("Failed to load quizzes: " + errorMessage);
-    } finally {
-      setLoadingQuizzes(false);
-    }
-  }, [user]);
-
   useEffect(() => {
-    fetchCustomQuizzes();
-
     const handlePopState = () => {
       setQuizState('home');
       setCurrentSubject(null);
@@ -81,7 +40,7 @@ export function useQuizManager(user: User | null) {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [fetchCustomQuizzes]);
+  }, []);
 
   const handleEditQuiz = (e: React.MouseEvent, quiz: Quiz) => {
      e.stopPropagation();
@@ -110,16 +69,15 @@ export function useQuizManager(user: User | null) {
     setCurrentSubject(null);
     setQuizToEdit(undefined);
     if (window.history.state) window.history.back();
+    // Refresh attempts when exiting a quiz to show updated XP/Status
+    mutateAttempts();
   };
 
-  const handleSaveQuiz = (newQuiz: Quiz) => {
-    // Optimistic Update
-    const updatedCustom = { ...customQuizzes, [newQuiz.id]: newQuiz };
-    setCustomQuizzes(updatedCustom);
-    setAllQuizzes(updatedCustom);
+  const handleSaveQuiz = async (_newQuiz: Quiz) => {
+    // Optimistic Update handled by SWR revalidation
     setQuizState('home');
     setQuizToEdit(undefined);
-    fetchCustomQuizzes(); // Re-fetch to confirm
+    await mutateQuizzes();
   };
 
   const handleDeleteQuiz = (e: React.MouseEvent, quizId: string) => {
@@ -131,20 +89,43 @@ export function useQuizManager(user: User | null) {
     if (!quizToDelete) return;
     const quizId = quizToDelete;
 
-    // Optimistic Update
-    const updatedCustom = { ...customQuizzes };
-    delete updatedCustom[quizId];
-    setCustomQuizzes(updatedCustom);
-    setAllQuizzes(updatedCustom);
-
     try {
        await quizService.deleteQuiz(quizId);
        toast.success("Quiz deleted");
+       mutateQuizzes(); // Refresh list
     } catch {
        toast.error("Failed to delete quiz");
-       fetchCustomQuizzes(); // Revert on failure
     } finally {
        setQuizToDelete(null);
+    }
+  };
+
+  const handleDuplicateQuiz = async (e: React.MouseEvent, quiz: Quiz) => {
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Please login to duplicate quizzes");
+      return;
+    }
+    
+    try {
+      await quizService.duplicateQuiz(quiz.id, user.id);
+      toast.success("Quiz duplicated");
+      mutateQuizzes();
+    } catch (error) {
+      console.error("Duplicate error", error);
+      toast.error("Failed to duplicate quiz");
+    }
+  };
+
+  const handleArchiveQuiz = async (e: React.MouseEvent, quizId: string) => {
+    e.stopPropagation();
+    try {
+      await quizService.archiveQuiz(quizId);
+      toast.success("Quiz archived");
+      mutateQuizzes();
+    } catch (error) {
+       console.error("Archive error", error);
+       toast.error("Failed to archive quiz");
     }
   };
 
@@ -165,6 +146,8 @@ export function useQuizManager(user: User | null) {
     handleSaveQuiz,
     handleDeleteQuiz,
     confirmDelete,
-    userAttempts
+    userAttempts,
+    handleDuplicateQuiz,
+    handleArchiveQuiz
   };
 }

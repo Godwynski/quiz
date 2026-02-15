@@ -33,7 +33,9 @@ export default function Home() {
     handleSaveQuiz,
     handleDeleteQuiz,
     confirmDelete,
-    userAttempts
+    userAttempts,
+    handleDuplicateQuiz,
+    handleArchiveQuiz
   } = useQuizManager(user);
 
   const currentQuiz = currentSubject ? allQuizzes[currentSubject] : null;
@@ -105,6 +107,8 @@ export default function Home() {
                   onStart={handleStartQuiz} 
                   onEdit={handleEditQuiz} 
                   onDelete={handleDeleteQuiz}
+                  onDuplicate={handleDuplicateQuiz}
+                  onArchive={handleArchiveQuiz}
                 />
               </motion.main>
             )}
