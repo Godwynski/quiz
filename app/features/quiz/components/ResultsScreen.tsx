@@ -18,10 +18,24 @@ interface ResultsScreenProps {
   onRestart: () => void;
   onRedemption?: () => void;
   xpGained?: number;
+  xpFromAttempt?: number;
+  previousBestXp?: number;
   newLeague?: string;
+  isNewBest?: boolean;
 }
 
-export default function ResultsScreen({ score, total, answers, onRestart, onRedemption, xpGained, newLeague }: ResultsScreenProps) {
+export default function ResultsScreen({ 
+  score, 
+  total, 
+  answers, 
+  onRestart, 
+  onRedemption, 
+  xpGained, 
+  xpFromAttempt,
+  previousBestXp,
+  newLeague,
+  isNewBest 
+}: ResultsScreenProps) {
   const percentage = Math.round((score / total) * 100);
   
   useEffect(() => {
@@ -111,11 +125,34 @@ export default function ResultsScreen({ score, total, answers, onRestart, onRede
               {xpGained !== undefined && (
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col gap-1 min-w-[200px]">
                   <span className="text-xs font-bold uppercase text-primary tracking-wider">Rewards</span>
-                  <div className="text-2xl font-bold flex items-center gap-2">
-                     <span className="text-yellow-500">✨</span> +{xpGained} XP
-                  </div>
+                  
+                  {xpGained > 0 ? (
+                    <>
+                      <div className="text-2xl font-bold flex items-center gap-2">
+                         <span className="text-yellow-500">✨</span> +{xpGained} XP
+                      </div>
+                      {isNewBest && (
+                        <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                           🎯 New High Score!
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-lg font-bold text-muted-foreground">
+                         No XP Gained
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                         Previous best: {previousBestXp || 0} XP
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                         This attempt: {xpFromAttempt || 0} XP
+                      </div>
+                    </>
+                  )}
+                  
                   {newLeague && (
-                     <div className="text-sm font-medium text-muted-foreground">
+                     <div className="text-sm font-medium text-muted-foreground mt-1">
                         League: <span className="text-foreground font-bold">{newLeague}</span>
                      </div>
                   )}

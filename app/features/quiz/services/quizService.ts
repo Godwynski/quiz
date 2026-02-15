@@ -55,7 +55,20 @@ export const quizService = {
     return data as Quiz;
   },
 
-  async submitAttempt(quizId: string, title: string, score: number, total: number, answers: Json[]): Promise<{ xp_gained: number; new_league: string } | null> {
+  async submitAttempt(
+    quizId: string, 
+    title: string, 
+    score: number, 
+    total: number, 
+    answers: Json[]
+  ): Promise<{ 
+    xp_gained: number; 
+    xp_from_attempt: number;
+    previous_best_xp: number;
+    new_total_xp: number;
+    new_league: string;
+    is_new_best: boolean;
+  } | null> {
     const { data, error } = await supabase.rpc('submit_quiz_attempt', {
       p_quiz_id: quizId,
       p_quiz_title: title,
@@ -70,7 +83,14 @@ export const quizService = {
     }
 
     if (data) {
-       return data as { xp_gained: number; new_league: string };
+       return data as { 
+         xp_gained: number; 
+         xp_from_attempt: number;
+         previous_best_xp: number;
+         new_total_xp: number;
+         new_league: string;
+         is_new_best: boolean;
+       };
     }
     return null;
   },

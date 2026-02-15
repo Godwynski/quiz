@@ -68,7 +68,10 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
   
   // Gamification State
   const [xpGained, setXpGained] = useState<number | undefined>(undefined);
+  const [xpFromAttempt, setXpFromAttempt] = useState<number | undefined>(undefined);
+  const [previousBestXp, setPreviousBestXp] = useState<number | undefined>(undefined);
   const [newLeague, setNewLeague] = useState<string | undefined>(undefined);
+  const [isNewBest, setIsNewBest] = useState<boolean | undefined>(undefined);
 
   const currentQuestion = activeQuestions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / activeQuestions.length) * 100;
@@ -137,7 +140,10 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
             
             if (result) {
                setXpGained(result.xp_gained);
+               setXpFromAttempt(result.xp_from_attempt);
+               setPreviousBestXp(result.previous_best_xp);
                setNewLeague(result.new_league);
+               setIsNewBest(result.is_new_best);
             }
 
             toast.success("Result saved!");
@@ -193,7 +199,10 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
         onRestart={onExit}
         onRedemption={handleRedemption}
         xpGained={xpGained}
+        xpFromAttempt={xpFromAttempt}
+        previousBestXp={previousBestXp}
         newLeague={newLeague}
+        isNewBest={isNewBest}
       />
     );
   }

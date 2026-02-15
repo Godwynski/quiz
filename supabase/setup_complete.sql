@@ -137,6 +137,7 @@ create index idx_quiz_attempts_quiz_id on public.quiz_attempts(quiz_id);
 
 -- RPC Function: Submit Quiz Attempt
 -- Handles XP calculation, league updates, and prevents farming
+-- Uses differential XP system: only awards XP for score improvements
 CREATE OR REPLACE FUNCTION public.submit_quiz_attempt(
   p_quiz_id text,
   p_quiz_title text,
@@ -147,32 +148,37 @@ CREATE OR REPLACE FUNCTION public.submit_quiz_attempt(
 RETURNS jsonb AS $$
 DECLARE
   v_xp_gain integer;
+  v_current_xp integer;
+  v_previous_best_xp integer;
   v_new_total_xp integer;
   v_new_league text;
   v_attempt_id uuid;
-  v_already_perfected boolean;
+  v_is_new_best boolean;
 BEGIN
-  -- Check if user has already achieved a perfect score for this quiz
-  -- Comparison is safe because quiz_id column is now TEXT
-  SELECT EXISTS (
-    SELECT 1 FROM public.quiz_attempts
-    WHERE user_id = auth.uid()
-    AND quiz_id = p_quiz_id
-    AND score = total_questions
-  ) INTO v_already_perfected;
+  -- Query the best XP previously earned from this quiz
+  SELECT MAX(
+    CASE
+      WHEN score = total_questions THEN (score * 10) + 50
+      ELSE score * 10
+    END
+  ) INTO v_previous_best_xp
+  FROM public.quiz_attempts
+  WHERE user_id = auth.uid() AND quiz_id = p_quiz_id;
 
-  -- Calculate Potential XP
-  v_xp_gain := (p_score * 10);
+  -- Calculate XP for current attempt
+  v_current_xp := (p_score * 10);
   IF p_score = p_total_questions THEN
-    v_xp_gain := v_xp_gain + 50;
+    v_current_xp := v_current_xp + 50;
   END IF;
 
-  -- If already perfected, cap XP gain to 0
-  IF v_already_perfected THEN
-    v_xp_gain := 0;
-  END IF;
+  -- Award only the difference (incremental XP)
+  -- If this is the first attempt, v_previous_best_xp will be NULL, so COALESCE to 0
+  v_xp_gain := GREATEST(0, v_current_xp - COALESCE(v_previous_best_xp, 0));
+  
+  -- Determine if this is a new best score
+  v_is_new_best := (v_xp_gain > 0);
 
-  -- Insert Attempt
+  -- Insert Attempt (always record the attempt, even if no XP gained)
   INSERT INTO public.quiz_attempts (
     user_id, quiz_id, quiz_title, score, total_questions, answers, completed_at
   ) VALUES (
@@ -203,12 +209,15 @@ BEGIN
   SET current_league = v_new_league
   WHERE id = auth.uid() AND current_league != v_new_league;
 
+  -- Return comprehensive result
   RETURN jsonb_build_object(
     'attempt_id', v_attempt_id,
     'xp_gained', v_xp_gain,
+    'xp_from_attempt', v_current_xp,
+    'previous_best_xp', COALESCE(v_previous_best_xp, 0),
     'new_total_xp', v_new_total_xp,
     'new_league', v_new_league,
-    'already_perfected', v_already_perfected
+    'is_new_best', v_is_new_best
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
