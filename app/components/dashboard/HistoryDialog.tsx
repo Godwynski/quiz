@@ -51,9 +51,10 @@ export function HistoryDialog({ user }: HistoryDialogProps) {
     setLoading(false);
   }, [user]);
 
+  // Data fetching when dialog opens is a legitimate use case
   useEffect(() => {
     if (open && user) {
-      fetchHistory();
+      fetchHistory(); // eslint-disable-line
     }
   }, [open, user, fetchHistory]);
 

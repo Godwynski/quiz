@@ -11,12 +11,13 @@ interface QuizGridProps {
   quizzes: Record<string, Quiz>;
   loading: boolean;
   user: User | null;
+  userAttempts?: Record<string, { best_score: number; total: number; is_perfect: boolean }>;
   onStart: (id: string) => void;
   onEdit: (e: React.MouseEvent, quiz: Quiz) => void;
   onDelete: (e: React.MouseEvent, id: string) => void;
 }
 
-export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: QuizGridProps) {
+export function QuizGrid({ quizzes, loading, user, userAttempts, onStart, onEdit, onDelete }: QuizGridProps) {
   const [filter, setFilter] = useState<'all' | 'my'>('all');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -114,13 +115,22 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
         </div>
       ) : (
         <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-3"}>
-          {filteredQuizzes.map((quiz) => (
-             viewMode === 'grid' ? (
+          {filteredQuizzes.map((quiz) => {
+             const attempt = userAttempts?.[quiz.id];
+             let status: 'perfect' | 'completed' | 'none' = 'none';
+             
+             if (attempt) {
+                if (attempt.is_perfect) status = 'perfect';
+                else if (attempt.best_score > 0) status = 'completed';
+             }
+
+             return viewMode === 'grid' ? (
                 <QuizCard 
                   key={quiz.id} 
                   quiz={quiz} 
                   user={user} 
                   isCustom={true}
+                  userStatus={status}
                   onStart={onStart} 
                   onEdit={onEdit} 
                   onDelete={onDelete} 
@@ -131,12 +141,13 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
                   quiz={quiz} 
                   user={user} 
                   isCustom={true}
+                  userStatus={status}
                   onStart={onStart} 
                   onEdit={onEdit} 
                   onDelete={onDelete} 
                 />
-             )
-          ))}
+             );
+          })}
         </div>
       )}
     </div>

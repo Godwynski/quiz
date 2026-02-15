@@ -32,7 +32,8 @@ export default function Home() {
     handleExitQuiz,
     handleSaveQuiz,
     handleDeleteQuiz,
-    confirmDelete
+    confirmDelete,
+    userAttempts
   } = useQuizManager(user);
 
   const currentQuiz = currentSubject ? allQuizzes[currentSubject] : null;
@@ -100,6 +101,7 @@ export default function Home() {
                   quizzes={allQuizzes} 
                   loading={loadingQuizzes || authLoading} 
                   user={user}
+                  userAttempts={userAttempts}
                   onStart={handleStartQuiz} 
                   onEdit={handleEditQuiz} 
                   onDelete={handleDeleteQuiz}

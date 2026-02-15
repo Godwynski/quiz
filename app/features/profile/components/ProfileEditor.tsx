@@ -6,10 +6,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
+import { Slider } from "../../../components/ui/slider";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { User as UserIcon } from "lucide-react";
 import { profileService } from "../services/profileService";
+import { quizService } from "@/app/features/quiz/services/quizService";
+import Cropper, { Area } from 'react-easy-crop';
+import getCroppedImg from "@/app/utils/canvasUtils";
 
 interface ProfileEditorProps {
   user: User | null;
@@ -24,6 +28,15 @@ export function ProfileEditor({ user, isOpen, onOpenChange, onSignOut }: Profile
   const [totalXp, setTotalXp] = useState(0);
   const [league, setLeague] = useState("Bronze");
   const [loading, setLoading] = useState(false);
+  const [showClearHistoryConfirm, setShowClearHistoryConfirm] = useState(false);
+  const [clearingHistory, setClearingHistory] = useState(false);
+
+  // Cropping State
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -44,6 +57,56 @@ export function ProfileEditor({ user, isOpen, onOpenChange, onSignOut }: Profile
     }
   }, [user, isOpen]);
 
+  const onCropComplete = (croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const imageDataUrl = await readFile(file);
+      setImageSrc(imageDataUrl);
+      setIsCropping(true);
+      // Reset cropper state
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    }
+  };
+
+  const readFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(reader.result as string));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleCropSave = async () => {
+    if (!imageSrc || !croppedAreaPixels || !user) return;
+    
+    try {
+      setLoading(true);
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
+      
+      if (!croppedImage) {
+         throw new Error("Failed to crop image");
+      }
+
+      // Upload the cropped image blob directly
+      const publicUrl = await profileService.uploadAvatar(user.id, croppedImage);
+      
+      setAvatarUrl(publicUrl);
+      setIsCropping(false);
+      setImageSrc(null);
+      toast.success("Image cropped and uploaded!");
+    } catch (error) {
+      console.error('Crop/Upload Error:', error);
+      toast.error("Failed to process image");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setLoading(true);
@@ -63,7 +126,74 @@ export function ProfileEditor({ user, isOpen, onOpenChange, onSignOut }: Profile
     }
   };
 
+  const handleClearHistory = async () => {
+     if (!user) return;
+     setClearingHistory(true);
+     try {
+        await quizService.clearHistory();
+        toast.success("History and XP cleared.");
+        
+        // Refresh local state to reflect reset
+        setTotalXp(0);
+        setLeague("Bronze");
+        setShowClearHistoryConfirm(false);
+     } catch (err) {
+        console.error("Failed to clear history:", err);
+        toast.error("Failed to clear history.");
+     } finally {
+        setClearingHistory(false);
+     }
+  };
+
+  // If cropping, show the cropper UI instead of the normal profile editor
+  if (isCropping && imageSrc) {
+     return (
+        <Dialog open={true} onOpenChange={() => setIsCropping(false)}>
+           <DialogContent className="w-[90%] h-[90vh] sm:h-auto sm:max-w-[500px] border-4 border-black doodle-border bg-[#fff9f0] p-0 overflow-hidden flex flex-col">
+              <DialogHeader className="p-6 pb-2">
+                 <DialogTitle>Crop Profile Picture</DialogTitle>
+                 <DialogDescription>Drag to position and pinch/scroll to zoom.</DialogDescription>
+              </DialogHeader>
+              
+              <div className="relative flex-1 min-h-[300px] w-full bg-black/5">
+                 <Cropper
+                    image={imageSrc}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={1}
+                    onCropChange={setCrop}
+                    onCropComplete={onCropComplete}
+                    onZoomChange={setZoom}
+                 />
+              </div>
+
+              <div className="p-6 space-y-4 bg-white border-t border-border">
+                 <div className="space-y-2">
+                    <Label>Zoom</Label>
+                    <Slider 
+                       value={[zoom]} 
+                       min={1} 
+                       max={3} 
+                       step={0.1} 
+                       onValueChange={(val: number[]) => setZoom(val[0])} 
+                    />
+                 </div>
+                 <div className="flex justify-between gap-3 pt-2">
+                    <Button variant="outline" onClick={() => setIsCropping(false)} className="flex-1">
+                       Cancel
+                    </Button>
+                    <Button onClick={handleCropSave} className="flex-1" disabled={loading}>
+                       {loading ? "Processing..." : "Apply & Upload"}
+                    </Button>
+                 </div>
+              </div>
+           </DialogContent>
+        </Dialog>
+     );
+  }
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90%] sm:w-full sm:max-w-[425px] border-4 border-black doodle-border shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-[#fff9f0]">
         <DialogHeader>
@@ -92,63 +222,7 @@ export function ProfileEditor({ user, isOpen, onOpenChange, onSignOut }: Profile
                id="avatar-upload" 
                className="hidden" 
                accept="image/*"
-               onChange={async (e) => {
-                 const file = e.target.files?.[0];
-                 if (!file) return;
-
-                 // Resize logic
-                 const resizeImage = (file: File): Promise<Blob> => {
-                   return new Promise((resolve, reject) => {
-                     const img = document.createElement('img');
-                     img.src = URL.createObjectURL(file);
-                     img.onload = () => {
-                       const canvas = document.createElement('canvas');
-                       const MAX_WIDTH = 300;
-                       const MAX_HEIGHT = 300;
-                       let width = img.width;
-                       let height = img.height;
-
-                       if (width > height) {
-                         if (width > MAX_WIDTH) {
-                           height *= MAX_WIDTH / width;
-                           width = MAX_WIDTH;
-                         }
-                       } else {
-                         if (height > MAX_HEIGHT) {
-                           width *= MAX_HEIGHT / height;
-                           height = MAX_HEIGHT;
-                         }
-                       }
-
-                       canvas.width = width;
-                       canvas.height = height;
-                       const ctx = canvas.getContext('2d');
-                       ctx?.drawImage(img, 0, 0, width, height);
-                       
-                       canvas.toBlob((blob) => {
-                         if (blob) resolve(blob);
-                         else reject(new Error('Canvas to Blob failed'));
-                       }, 'image/jpeg', 0.7); // Quality 0.7 for small size
-                     };
-                     img.onerror = reject;
-                   });
-                 };
-
-                 try {
-                   setLoading(true);
-                   const resizedBlob = await resizeImage(file);
-                   if (!user) return;
-                   const publicUrl = await profileService.uploadAvatar(user.id, resizedBlob);
-                   
-                   setAvatarUrl(publicUrl);
-                   toast.success("Avatar uploaded!");
-                 } catch (error: unknown) {
-                    console.error('Upload Error:', error);
-                    toast.error(error instanceof Error ? error.message : "Failed to upload avatar");
-                 } finally {
-                   setLoading(false);
-                 }
-               }}
+               onChange={handleFileChange}
              />
           </div>
           
@@ -196,7 +270,45 @@ export function ProfileEditor({ user, isOpen, onOpenChange, onSignOut }: Profile
             {loading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
+        
+        <div className="mt-4 pt-4 border-t border-dashed border-gray-300">
+           <Button
+             variant="ghost"
+             size="sm"
+             onClick={() => setShowClearHistoryConfirm(true)}
+             className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 text-xs uppercase tracking-widest font-bold"
+           >
+             Danger: Reset My Profile
+           </Button>
+        </div>
       </DialogContent>
     </Dialog>
+    
+    <Dialog open={showClearHistoryConfirm} onOpenChange={setShowClearHistoryConfirm}>
+       <DialogContent className="border-4 border-red-600 bg-red-50 sm:max-w-[425px]">
+          <DialogHeader>
+             <DialogTitle className="text-red-600 font-black uppercase text-2xl">Reset Profile?</DialogTitle>
+             <DialogDescription className="text-red-800 font-medium text-base">
+                This will <strong>permanently delete</strong> all your quiz history and <strong>reset your XP/League</strong> to zero. 
+                <br/><br/>
+                This cannot be undone. Are you sure?
+             </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+             <Button variant="outline" onClick={() => setShowClearHistoryConfirm(false)} className="border-2 border-red-200">
+                Cancel
+             </Button>
+             <Button 
+                variant="destructive" 
+                onClick={handleClearHistory}
+                disabled={clearingHistory}
+                className="bg-red-600 hover:bg-red-700 border-2 border-red-900 font-bold"
+             >
+                {clearingHistory ? "Resetting..." : "Yes, Reset Everything"}
+             </Button>
+          </DialogFooter>
+       </DialogContent>
+    </Dialog>
+    </>
   );
 }

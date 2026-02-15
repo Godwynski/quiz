@@ -21,6 +21,8 @@ export function useQuizManager(user: User | null) {
   // Edit Mode
   const [quizToEdit, setQuizToEdit] = useState<Quiz | undefined>(undefined);
 
+  const [userAttempts, setUserAttempts] = useState<Record<string, { best_score: number; total: number; is_perfect: boolean }>>({});
+
   const fetchCustomQuizzes = useCallback(async () => {
     setLoadingQuizzes(true);
     try {
@@ -31,14 +33,42 @@ export function useQuizManager(user: User | null) {
       });
       setCustomQuizzes(quizzesRecord);
       setAllQuizzes(quizzesRecord);
-    } catch (error: any) {
+
+      // Fetch attempts if user is logged in
+      if (user) {
+         try {
+            const attempts = await quizService.getUserAttempts(user.id);
+            const attemptsMap: Record<string, { best_score: number; total: number; is_perfect: boolean }> = {};
+            
+            attempts.forEach(attempt => {
+               const existing = attemptsMap[attempt.quiz_id];
+               const isPerfect = attempt.score === attempt.total_questions;
+               
+               if (!existing || attempt.score > existing.best_score) {
+                  attemptsMap[attempt.quiz_id] = {
+                     best_score: attempt.score,
+                     total: attempt.total_questions,
+                     is_perfect: isPerfect || (existing?.is_perfect ?? false)
+                  };
+               } else if (isPerfect) {
+                  // even if score isn't higher (e.g. ties), mark as perfect if this attempt is perfect
+                  existing.is_perfect = true;
+               }
+            });
+            setUserAttempts(attemptsMap);
+         } catch (err) {
+            console.error("Failed to load attempts", err);
+         }
+      }
+
+    } catch (error: unknown) {
       console.error("Fetch error details:", error);
-      const errorMessage = error.message || error.error_description || "Unknown error";
+      const errorMessage = (error as Error).message || (error as { error_description?: string }).error_description || "Unknown error";
       toast.error("Failed to load quizzes: " + errorMessage);
     } finally {
       setLoadingQuizzes(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchCustomQuizzes();
@@ -134,6 +164,7 @@ export function useQuizManager(user: User | null) {
     handleExitQuiz,
     handleSaveQuiz,
     handleDeleteQuiz,
-    confirmDelete
+    confirmDelete,
+    userAttempts
   };
 }

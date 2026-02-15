@@ -3,7 +3,7 @@ import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { QuizCardProps } from "./QuizCard";
 
-export function QuizListCard({ quiz, user, isCustom, onStart, onEdit, onDelete }: QuizCardProps) {
+export function QuizListCard({ quiz, user, isCustom, userStatus, onStart, onEdit, onDelete }: QuizCardProps) {
   const isOwner = user?.email === quiz.creator_email || user?.id === quiz.user_id;
 
   return (
@@ -21,7 +21,14 @@ export function QuizListCard({ quiz, user, isCustom, onStart, onEdit, onDelete }
 
       {/* Content Area */}
       <div className="flex-grow min-w-0 flex flex-col justify-center">
-        <h3 className="font-semibold text-sm truncate leading-tight text-foreground">{quiz.title}</h3>
+        <div className="flex items-center gap-2">
+           <h3 className="font-semibold text-sm truncate leading-tight text-foreground">{quiz.title}</h3>
+           {userStatus && userStatus !== 'none' && (
+               <span className={`text-[9px] px-1.5 py-0.5 rounded border border-black/10 font-bold uppercase ${userStatus === 'perfect' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                  {userStatus === 'perfect' ? 'Perfect' : 'Done'}
+               </span>
+           )}
+        </div>
         <p className="text-[10px] text-muted-foreground truncate mt-0.5">
            {quiz.questions?.length ?? 0} Qs • {quiz.creator_username || 'Unknown'}
         </p>

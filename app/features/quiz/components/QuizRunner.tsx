@@ -119,6 +119,14 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
       // Save results if logged in
       if (user) {
          try {
+            console.log("Submitting attempt...", {
+               quizId: quiz.id,
+               title: quiz.title,
+               score,
+               total: activeQuestions.length,
+               answersCount: userAnswers.length
+            });
+
             const result = await quizService.submitAttempt(
                quiz.id,
                quiz.title,
@@ -133,9 +141,16 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
             }
 
             toast.success("Result saved!");
-         } catch (err) {
-            console.error("Failed to save result:", err);
-            toast.error("Failed to save result history.");
+         } catch (err: unknown) {
+            console.error("Failed to save result. Full error:", err);
+            const error = err as Error; 
+            console.error("Error details:", {
+                message: error?.message,
+                code: (error as { code?: string })?.code,
+                details: (error as { details?: string })?.details,
+                hint: (error as { hint?: string })?.hint
+            });
+            toast.error("Failed to save result history: " + (error?.message || "Unknown error"));
          }
       }
     }

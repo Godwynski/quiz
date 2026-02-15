@@ -18,17 +18,15 @@ export const quizService = {
     if (error) throw error;
 
     return (data || []).map((q) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const profile = (q as any).profiles;
+      const profile = (q as { profiles?: { username?: string; avatar_url?: string } }).profiles;
       const quiz: Quiz = {
-        ...(q as any),
+        ...(q as Quiz),
         creator_username: profile?.username || undefined,
         creator_avatar_url: profile?.avatar_url || undefined,
       };
       
       // Clean up the profiles property for the strict Quiz type
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ('profiles' in quiz) delete (quiz as any).profiles;
+      if ('profiles' in quiz) delete (quiz as Record<string, unknown>).profiles;
       
       return quiz;
     });
@@ -48,9 +46,8 @@ export const quizService = {
     };
 
     const query = !isNew && quiz.id
-      // @ts-expect-error: Supabase inference issue with update payload
-      ? supabase.from('quizzes').update(payload as any).eq('id', quiz.id)
-      : supabase.from('quizzes').insert([payload] as any);
+      ? supabase.from('quizzes').update(payload as unknown as never).eq('id', quiz.id)
+      : supabase.from('quizzes').insert([payload] as unknown as never[]);
 
     const { data, error } = await query.select().single();
     
@@ -58,16 +55,19 @@ export const quizService = {
     return data as Quiz;
   },
 
-  async submitAttempt(quizId: string, title: string, score: number, total: number, answers: any[]): Promise<{ xp_gained: number; new_league: string } | null> {
+  async submitAttempt(quizId: string, title: string, score: number, total: number, answers: Json[]): Promise<{ xp_gained: number; new_league: string } | null> {
     const { data, error } = await supabase.rpc('submit_quiz_attempt', {
       p_quiz_id: quizId,
       p_quiz_title: title,
       p_score: score, 
       p_total_questions: total,
       p_answers: answers as unknown as Json
-    } as any);
+    } as unknown as undefined);
     
-    if (error) throw error;
+    if (error) {
+       console.error("Supabase RPC Error:", error);
+       throw error;
+    }
 
     if (data) {
        return data as { xp_gained: number; new_league: string };
@@ -76,6 +76,21 @@ export const quizService = {
   },
   async deleteQuiz(quizId: string): Promise<void> {
     const { error } = await supabase.from('quizzes').delete().eq('id', quizId);
+    if (error) throw error;
+  },
+
+  async getUserAttempts(userId: string): Promise<{ quiz_id: string; score: number; total_questions: number }[]> {
+    const { data, error } = await supabase
+      .from('quiz_attempts')
+      .select('quiz_id, score, total_questions')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async clearHistory(): Promise<void> {
+    const { error } = await supabase.rpc('clear_user_history');
     if (error) throw error;
   }
 };

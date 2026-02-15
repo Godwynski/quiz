@@ -9,12 +9,13 @@ export interface QuizCardProps {
   quiz: Quiz;
   user: SupabaseUser | null;
   isCustom: boolean;
+  userStatus?: 'perfect' | 'completed' | 'none';
   onStart: (id: string) => void;
   onEdit?: (e: React.MouseEvent, quiz: Quiz) => void;
   onDelete?: (e: React.MouseEvent, id: string) => void;
 }
 
-export function QuizCard({ quiz, user, isCustom, onStart, onEdit, onDelete }: QuizCardProps) {
+export function QuizCard({ quiz, user, isCustom, userStatus, onStart, onEdit, onDelete }: QuizCardProps) {
   const isOwner = user?.email === quiz.creator_email || user?.id === quiz.user_id;
 
   return (
@@ -24,6 +25,13 @@ export function QuizCard({ quiz, user, isCustom, onStart, onEdit, onDelete }: Qu
     >
       <div className={`absolute top-0 left-0 w-full h-2`} style={{ backgroundColor: quiz.color || '#000' }} />
       
+      {/* Status Badge */}
+      {userStatus && userStatus !== 'none' && (
+         <div className={`absolute top-3 right-3 px-2 py-1 rounded-md border-2 border-black text-[10px] font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 ${userStatus === 'perfect' ? 'bg-yellow-400 text-yellow-900' : 'bg-green-400 text-green-900'}`}>
+            {userStatus === 'perfect' ? 'Perfect' : 'Done'}
+         </div>
+      )}
+
       <CardHeader className="pt-8 pb-4">
         <div className="flex justify-between items-start gap-4">
           <div className="p-3 rounded-xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white group-hover:rotate-6 transition-transform text-2xl">

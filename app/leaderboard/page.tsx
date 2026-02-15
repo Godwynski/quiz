@@ -33,12 +33,13 @@ export default function LeaderboardPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
+        .not('username', 'is', null)
         .order('total_xp', { ascending: false })
         .limit(50);
       
       if (error) throw error;
       if (data) {
-        setProfiles(data as any[]);
+        setProfiles(data as Profile[]);
       }
     } catch (error) {
       console.error("Error fetching leaderboard:", error);

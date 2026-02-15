@@ -32,8 +32,7 @@ export const profileService = {
 
     const { error } = await supabase
       .from('profiles')
-      // @ts-expect-error: Suppress type error due to complex generic inference issue with Partial<Profile> and Supabase Update type
-      .update(payload as any)
+      .update(payload as unknown as never)
       .eq('id', userId);
 
     if (error) throw error;
