@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 import { useAuth } from "@/app/components/auth-provider";
 import QuizCreator from "@/app/components/QuizCreator";
 import QuizRunner from "@/app/components/QuizRunner";
@@ -9,9 +10,12 @@ import { DashboardHeader } from "@/app/components/dashboard/DashboardHeader";
 import { QuizGrid } from "@/app/components/dashboard/QuizGrid";
 import { useQuizManager } from "@/app/hooks/useQuizManager";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
+import { MobileNav } from "@/app/components/navigation/MobileNav";
+import { ProfileEditor } from "@/app/components/profile/ProfileEditor";
 
 export default function Home() {
   const { user, loading: authLoading, signOut } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const { 
     quizState, 
@@ -34,7 +38,7 @@ export default function Home() {
   const currentQuiz = currentSubject ? allQuizzes[currentSubject] : null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans pb-20 md:pb-0">
       <div className="max-w-7xl mx-auto px-6 py-8 md:py-12">
          <AnimatePresence mode="wait">
             {(quizState === 'create' || quizState === 'edit') && (
@@ -89,6 +93,7 @@ export default function Home() {
                   user={user} 
                   onSignOut={signOut} 
                   onCreateQuiz={handleCreateQuiz} 
+                  onOpenProfile={() => setIsProfileOpen(true)}
                 />
                 
                 <QuizGrid 
@@ -103,6 +108,23 @@ export default function Home() {
             )}
          </AnimatePresence>
       </div>
+
+      {/* Global Profile Editor controlled by page state */}
+      <ProfileEditor user={user} isOpen={isProfileOpen} onOpenChange={setIsProfileOpen} onSignOut={signOut} />
+
+      {/* Mobile Navigation */}
+      {user && quizState === 'home' && (
+        <MobileNav 
+          onHome={() => {
+             // Already on home, maybe scroll to top?
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onLeaderboard={() => window.location.assign('/leaderboard')}
+          onCreate={handleCreateQuiz}
+          onProfile={() => setIsProfileOpen(true)}
+          currentView="home"
+        />
+      )}
 
       <ConfirmDialog 
         isOpen={!!quizToDelete}

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
-import { LogOut, Plus } from "lucide-react";
+
+import { LogOut, Plus, Trophy } from "lucide-react";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { HistoryDialog } from "./HistoryDialog";
@@ -9,9 +10,10 @@ interface DashboardHeaderProps {
   user: User | null;
   onSignOut: () => void;
   onCreateQuiz: () => void;
+  onOpenProfile?: () => void;
 }
 
-export function DashboardHeader({ user, onSignOut, onCreateQuiz }: DashboardHeaderProps) {
+export function DashboardHeader({ user, onSignOut, onCreateQuiz, onOpenProfile }: DashboardHeaderProps) {
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
       <div className="space-y-1">
@@ -26,13 +28,26 @@ export function DashboardHeader({ user, onSignOut, onCreateQuiz }: DashboardHead
         </p>
       </div>
       <div className="flex items-center gap-2">
-        {user && <HistoryDialog user={user} />}
-        
-        {user ? (
-          <Button onClick={onSignOut} variant="outline" className="mr-2">
-            <LogOut className="mr-2 h-4 w-4" /> Sign Out
-          </Button>
-        ) : (
+        <div className="hidden md:flex items-center gap-2">
+            {user && <HistoryDialog user={user} />}
+            
+            <Button onClick={() => window.location.assign('/leaderboard')} variant="ghost" className="mr-2">
+            <Trophy className="mr-2 h-4 w-4 text-yellow-500" /> Leaderboard
+            </Button>
+            
+            {user && (
+            <>
+                <Button onClick={onOpenProfile} variant="outline" className="mr-2">
+                Profile
+                </Button>
+                <Button onClick={onSignOut} variant="ghost" className="mr-2 text-muted-foreground hover:text-foreground">
+                <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                </Button>
+            </>
+            )}
+        </div>
+
+        {!user && (
           <Button onClick={() => window.location.assign('/login')} variant="outline" className="mr-2">
             Sign In
           </Button>
@@ -45,7 +60,7 @@ export function DashboardHeader({ user, onSignOut, onCreateQuiz }: DashboardHead
             }
             onCreateQuiz();
           }}
-          className="rounded-full h-11 px-6 font-medium"
+          className="rounded-full h-11 px-6 font-medium hidden md:flex"
         >
           <Plus className="mr-2 h-4 w-4" />
           Create New

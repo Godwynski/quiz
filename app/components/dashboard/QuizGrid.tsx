@@ -13,12 +13,14 @@ interface QuizGridProps {
 }
 
 import { useState } from "react";
-import { Folder, ArrowLeft } from "lucide-react";
+import { Folder, ArrowLeft, Search } from "lucide-react";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 import { FolderCard } from "./FolderCard";
 
 export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: QuizGridProps) {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (loading) {
      return (
@@ -30,7 +32,10 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
 
   const visibleQuizzes = Object.values(quizzes).filter(quiz => {
     const isOwner = user && quiz.creator_email === user.email;
-    return quiz.is_public || isOwner || !quiz.creator_email;
+    const matchesSearch = quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          quiz.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return (quiz.is_public || isOwner || !quiz.creator_email) && matchesSearch;
   });
 
   // Group quizzes by subject
@@ -38,7 +43,7 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
   const rootQuizzes: Quiz[] = [];
 
   visibleQuizzes.forEach(quiz => {
-    if (quiz.subject) {
+    if (quiz.subject && !searchQuery) { // Only group if not searching
       subjects[quiz.subject] = (subjects[quiz.subject] || 0) + 1;
     } else {
       rootQuizzes.push(quiz);
@@ -97,7 +102,18 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
 
   // Root View: Folders first, then standard quizzes
   return (
-     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="space-y-6">
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input 
+          placeholder="Search quizzes..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 bg-background/50"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {/* Render Folders */}
         {uniqueSubjects.map(subject => (
            <FolderCard 
@@ -124,5 +140,6 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
            );
         })}
      </div>
+    </div>
   );
 }

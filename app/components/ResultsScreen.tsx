@@ -17,9 +17,11 @@ interface ResultsScreenProps {
   }[];
   onRestart: () => void;
   onRedemption?: () => void;
+  xpGained?: number;
+  newLeague?: string;
 }
 
-export default function ResultsScreen({ score, total, answers, onRestart, onRedemption }: ResultsScreenProps) {
+export default function ResultsScreen({ score, total, answers, onRestart, onRedemption, xpGained, newLeague }: ResultsScreenProps) {
   const percentage = Math.round((score / total) * 100);
   
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function ResultsScreen({ score, total, answers, onRestart, onRede
         </CardHeader>
         
         <CardContent className="space-y-8">
-          <div className="flex flex-col items-center justify-center py-8">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-12 py-8">
              <div className="relative inline-flex items-center justify-center">
               <svg className="w-48 h-48 transform -rotate-90">
                 <circle
@@ -101,8 +103,24 @@ export default function ResultsScreen({ score, total, answers, onRestart, onRede
               </div>
             </div>
             
-            <div className="mt-6 text-2xl font-medium">
-              Score: <span className={colorClass}>{score}</span> <span className="text-muted-foreground">/ {total}</span>
+            <div className="space-y-6 text-center md:text-left">
+              <div className="text-3xl font-medium">
+                Score: <span className={colorClass}>{score}</span> <span className="text-muted-foreground">/ {total}</span>
+              </div>
+              
+              {xpGained !== undefined && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col gap-1 min-w-[200px]">
+                  <span className="text-xs font-bold uppercase text-primary tracking-wider">Rewards</span>
+                  <div className="text-2xl font-bold flex items-center gap-2">
+                     <span className="text-yellow-500">✨</span> +{xpGained} XP
+                  </div>
+                  {newLeague && (
+                     <div className="text-sm font-medium text-muted-foreground">
+                        League: <span className="text-foreground font-bold">{newLeague}</span>
+                     </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

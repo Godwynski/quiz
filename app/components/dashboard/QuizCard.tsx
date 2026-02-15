@@ -76,7 +76,7 @@ export function QuizCard({ quiz, user, isCustom, onStart, onEdit, onDelete }: Qu
         </div>
         {quiz.creator_email && (
           <div className="ml-4 flex items-center text-[10px] text-muted-foreground italic truncate max-w-[120px]">
-            by {quiz.creator_email.split('@')[0]}
+            by {quiz.creator_username || quiz.creator_email.split('@')[0]}
           </div>
         )}
         <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />

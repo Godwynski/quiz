@@ -25,21 +25,47 @@ export function useQuizManager(user: User | null) {
     try {
       const { data, error } = await supabase
         .from('quizzes')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            avatar_url
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
+        // Define the shape of the joined data
+        type QuizWithProfile = Quiz & {
+          profiles: {
+            username: string | null;
+            avatar_url: string | null;
+          } | null;
+        };
+
         const fetchedQuizzes: Record<string, Quiz> = {};
-        (data as Quiz[]).forEach((q: Quiz) => {
-           fetchedQuizzes[q.id] = q;
+        (data as unknown as QuizWithProfile[]).forEach((q) => {
+           const profile = q.profiles;
+           const quiz: Quiz = {
+             ...q,
+             creator_username: profile?.username || undefined,
+             creator_avatar_url: profile?.avatar_url || undefined
+           };
+           // Remove the profiles property to match Quiz interface
+           if ('profiles' in quiz) {
+             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             delete (quiz as any).profiles;
+           }
+           fetchedQuizzes[quiz.id] = quiz;
         });
         setCustomQuizzes(fetchedQuizzes);
         setAllQuizzes(fetchedQuizzes);
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    } catch (error: any) {
+      console.error("Fetch error details:", error);
+      const errorMessage = error.message || error.error_description || "Unknown error";
       toast.error("Failed to load quizzes: " + errorMessage);
     } finally {
       setLoadingQuizzes(false);

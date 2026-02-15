@@ -11,6 +11,7 @@ import { ConfirmDialog } from "./ui/confirm-dialog";
 
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabase";
+import { Json } from "@/app/types/supabase";
 import { toast } from "sonner";
 
 interface QuizRunnerProps {
@@ -65,6 +66,10 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
     explanation: string;
     isCorrect: boolean;
   }[]>([]);
+  
+  // Gamification State
+  const [xpGained, setXpGained] = useState<number | undefined>(undefined);
+  const [newLeague, setNewLeague] = useState<string | undefined>(undefined);
 
   const currentQuestion = activeQuestions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / activeQuestions.length) * 100;
@@ -115,14 +120,21 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
       // Save results if logged in
       if (user) {
          try {
-            await supabase.from('quiz_attempts').insert({
-               user_id: user.id,
-               quiz_id: quiz.id,
-               quiz_title: quiz.title,
-               score: score, 
-               total_questions: activeQuestions.length,
-               answers: userAnswers
-            });
+            const { data, error } = await supabase.rpc('submit_quiz_attempt', {
+               p_quiz_id: quiz.id,
+               p_quiz_title: quiz.title,
+               p_score: score, 
+               p_total_questions: activeQuestions.length,
+               p_answers: userAnswers as unknown as Json
+            } as any);
+            
+            if (error) throw error;
+
+            if (data) {
+               setXpGained(data.xp_gained);
+               setNewLeague(data.new_league);
+            }
+
             toast.success("Result saved!");
          } catch (err) {
             console.error("Failed to save result:", err);
@@ -168,6 +180,8 @@ export default function QuizRunner({ quiz, user, onExit }: QuizRunnerProps) {
         answers={userAnswers}
         onRestart={onExit}
         onRedemption={handleRedemption}
+        xpGained={xpGained}
+        newLeague={newLeague}
       />
     );
   }

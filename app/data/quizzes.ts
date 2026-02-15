@@ -14,6 +14,9 @@ export interface Quiz {
   questions: Question[];
   creator_email?: string;
   creator_name?: string;
+  creator_username?: string;
+  creator_avatar_url?: string;
+
   is_public?: boolean;
   subject?: string;
 }
