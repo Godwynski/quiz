@@ -5,7 +5,7 @@ import { Quiz } from "@/app/data/quizzes";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import Image from "next/image";
 
-interface QuizCardProps {
+export interface QuizCardProps {
   quiz: Quiz;
   user: SupabaseUser | null;
   isCustom: boolean;

@@ -1,7 +1,8 @@
 import { Quiz } from "@/app/data/quizzes";
 import { User } from "@supabase/supabase-js";
-import { QuizCard } from "./QuizCard"; // Same directory import
-import { Search } from "lucide-react";
+import { QuizCard } from "./QuizCard";
+import { QuizListCard } from "./QuizListCard";
+import { Search, LayoutGrid, List } from "lucide-react";
 import { Input } from "@/app/components/ui/input";
 import { Button } from "@/app/components/ui/button";
 import { useState } from "react";
@@ -18,13 +19,22 @@ interface QuizGridProps {
 export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: QuizGridProps) {
   const [filter, setFilter] = useState<'all' | 'my'>('all');
   const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const filteredQuizzes = Object.values(quizzes).filter(quiz => {
-    // Filter by ownership
-    if (filter === 'my' && (!user || (quiz.creator_email !== user.email && quiz.user_id !== user.id))) {
+    const isOwner = user && (quiz.user_id === user.id || quiz.creator_email === user.email);
+
+    // 1. Visibility Check: Hide private quizzes from non-owners
+    if (!quiz.is_public && !isOwner) {
       return false;
     }
-    // Filter by search
+
+    // 2. Filter by Tab (My Quizzes)
+    if (filter === 'my' && !isOwner) {
+      return false;
+    }
+
+    // 3. Filter by Search
     if (search && !quiz.title.toLowerCase().includes(search.toLowerCase())) {
         return false;
     }
@@ -35,7 +45,7 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-[200px] w-full animate-pulse rounded-xl bg-muted/50 border-4 border-muted" />
+          <div key={i} className="h-[200px] w-full animate-pulse rounded-xl bg-muted/50 border-2 border-muted" />
         ))}
       </div>
     );
@@ -43,32 +53,57 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-         <div className="relative w-full sm:w-72">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+         {/* Search Bar */}
+         <div className="relative w-full sm:max-w-md">
            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
            <Input 
              placeholder="Search quizzes..." 
              value={search}
              onChange={(e) => setSearch(e.target.value)}
-             className="pl-9 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl"
+             className="pl-9 h-11 border-2 border-black/10 shadow-sm focus-visible:border-black/30 rounded-xl bg-white"
            />
          </div>
-         <div className="flex gap-2 w-full sm:w-auto">
-            <Button 
-              variant={filter === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilter('all')}
-              className={`flex-1 sm:flex-none border-2 border-black rounded-xl font-bold ${filter === 'all' ? 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'shadow-none hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-y-[2px] hover:translate-y-0'}`}
-            >
-              All Quizzes
-            </Button>
-            <Button 
-              variant={filter === 'my' ? 'default' : 'outline'}
-              onClick={() => setFilter('my')}
-              disabled={!user}
-              className={`flex-1 sm:flex-none border-2 border-black rounded-xl font-bold ${filter === 'my' ? 'shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'shadow-none hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] translate-y-[2px] hover:translate-y-0'}`}
-            >
-              My Quizzes
-            </Button>
+
+         <div className="flex gap-2">
+            {/* Filter Tabs - Segmented Control Style */}
+            <div className="flex p-1 bg-muted/80 rounded-xl border border-black/5 flex-1 sm:flex-none">
+               <Button 
+                 variant="ghost"
+                 onClick={() => setFilter('all')}
+                 className={`flex-1 sm:flex-none h-9 rounded-lg text-sm font-semibold transition-all ${filter === 'all' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+               >
+                 All
+               </Button>
+               <Button 
+                 variant="ghost"
+                 onClick={() => setFilter('my')}
+                 disabled={!user}
+                 className={`flex-1 sm:flex-none h-9 rounded-lg text-sm font-semibold transition-all ${filter === 'my' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+               >
+                 My Quizzes
+               </Button>
+            </div>
+
+            {/* View Toggle */}
+            <div className="flex p-1 bg-muted/80 rounded-xl border border-black/5 shrink-0">
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewMode('grid')}
+                  className={`h-9 w-9 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+               >
+                  <LayoutGrid className="h-4 w-4" />
+               </Button>
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewMode('list')}
+                  className={`h-9 w-9 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-black shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+               >
+                  <List className="h-4 w-4" />
+               </Button>
+            </div>
          </div>
       </div>
 
@@ -78,17 +113,29 @@ export function QuizGrid({ quizzes, loading, user, onStart, onEdit, onDelete }: 
           <p className="text-sm text-muted-foreground mt-2">Try adjusting your filters or create a new one!</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "flex flex-col gap-3"}>
           {filteredQuizzes.map((quiz) => (
-             <QuizCard 
-               key={quiz.id} 
-               quiz={quiz} 
-               user={user} 
-               isCustom={true}
-               onStart={onStart} 
-               onEdit={onEdit} 
-               onDelete={onDelete} 
-             />
+             viewMode === 'grid' ? (
+                <QuizCard 
+                  key={quiz.id} 
+                  quiz={quiz} 
+                  user={user} 
+                  isCustom={true}
+                  onStart={onStart} 
+                  onEdit={onEdit} 
+                  onDelete={onDelete} 
+                />
+             ) : (
+                <QuizListCard 
+                  key={quiz.id} 
+                  quiz={quiz} 
+                  user={user} 
+                  isCustom={true}
+                  onStart={onStart} 
+                  onEdit={onEdit} 
+                  onDelete={onDelete} 
+                />
+             )
           ))}
         </div>
       )}

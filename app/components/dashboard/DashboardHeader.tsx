@@ -15,7 +15,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ user, onSignOut, onCreateQuiz, onOpenProfile }: DashboardHeaderProps) {
   return (
-    <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-border">
+    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 pb-4 md:pb-6 border-b border-border">
       <div className="space-y-1">
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10">

@@ -140,7 +140,7 @@ export default function ResultsScreen({ score, total, answers, onRestart, onRede
                              <span className="bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Incorrect</span>
                           )}
                        </div>
-                       <CardTitle className="text-base font-medium leading-normal pt-1">{answer.question}</CardTitle>
+                       <CardTitle className="text-base font-medium leading-normal pt-1 break-words">{answer.question}</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-sm space-y-2">
                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
